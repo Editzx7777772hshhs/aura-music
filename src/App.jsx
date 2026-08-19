@@ -8,27 +8,27 @@ import {
 const STARTER_TRACKS = [
   {
     id: "init-1",
-    title: "Falak Tak",
-    artist: "Udit Narayan, Mahalakshmi Iyer",
-    cover: "https://c.saavncdn.com/001/Tashan-Hindi-2008-20190329150330-500x500.jpg",
-    audioUrl: "https://aac.saavncdn.com/001/6a0319dbb3b4aaebec56dfa255a2ee21_160.mp4",
-    lyrics: "Falak tak chal saath mere\nFalak tak chal saath chal...\n\n(Find full licensed lyrics on Google Search)"
+    title: "Midnight Chill (Lofi Beats)",
+    artist: "Aura Studio Chill",
+    cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80",
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
+    lyrics: "Ambient waves drifting through the night...\nPure relaxation and focus mode."
   },
   {
     id: "init-2",
-    title: "Khuda Jaane",
-    artist: "KK, Shilpa Rao",
-    cover: "https://c.saavncdn.com/712/Bachna-Ae-Haseeno-Hindi-2008-20221128032742-500x500.jpg",
-    audioUrl: "https://aac.saavncdn.com/712/ba0716a5d454659b8be5d45cf5447a11_160.mp4",
-    lyrics: "Sajde mein yun hi jhukta hoon\nTum pe hi aa ke rukta hoon...\n\n(Find full licensed lyrics on Google Search)"
+    title: "Sunset Vibes (Acoustic Pop)",
+    artist: "Summer Horizon",
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3",
+    lyrics: "Golden skies and memories that last forever..."
   },
   {
     id: "init-3",
-    title: "Starboy",
-    artist: "The Weeknd ft. Daft Punk",
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
-    audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/starboy_electronic.mp3",
-    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah...\n\n(Find full licensed lyrics on Google Search)"
+    title: "Electronic Dreamscape",
+    artist: "Synthwave Pulse",
+    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80",
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3",
+    lyrics: "Synthesizers pulsating through neon city nights..."
   }
 ];
 
@@ -63,64 +63,39 @@ export default function App() {
     localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
   }, [liked]);
 
-  // Direct High-Speed JSONP Saavn Resolver (Zero CORS Block)
-  const searchOnline = (term) => {
+  // Jamendo Unbreakable Full-Track Audio Search
+  const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     setSearchFeedback("");
 
-    const script = document.createElement("script");
-    const callbackName = "saavn_cb_" + Math.floor(Math.random() * 1000000);
+    const clientId = import.meta.env.VITE_JAMENDO_CLIENT_ID || "843847f1";
+    const url = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=jsonpretty&limit=20&namesearch=${encodeURIComponent(term.trim())}&include=musicinfo&audioformat=mp32`;
 
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setSearchFeedback("Search timeout. Please try again.");
-    }, 6000);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
 
-    window[callbackName] = (data) => {
-      clearTimeout(timer);
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
+      if (data?.results?.length > 0) {
+        const formatted = data.results.map((item) => ({
+          id: `jam-${item.id}`,
+          title: item.name,
+          artist: item.artist_name,
+          cover: item.image || item.album_image || STARTER_TRACKS[0].cover,
+          audioUrl: item.audio,
+          duration: item.duration,
+          lyrics: `Track: "${item.name}"\nArtist: ${item.artist_name}\nAlbum: ${item.album_name || 'Single'}\n\nFull-length DRM-free stream playing on Aura.`
+        })).filter(t => t.audioUrl);
 
-      const list = data?.results || data?.songs?.data || [];
-      if (Array.isArray(list) && list.length > 0) {
-        const formatted = list.map((item, idx) => {
-          let rawImg = item.image || item.album_image || "";
-          if (rawImg.includes("http://")) rawImg = rawImg.replace("http://", "https://");
-          const highResCover = rawImg.replace(/150x150/g, "500x500");
-
-          let mediaUrl = item.media_preview_url || item.more_info?.encrypted_media_url || "";
-          if (mediaUrl) {
-            mediaUrl = mediaUrl
-              .replace("preview.saavncdn.com", "aac.saavncdn.com")
-              .replace("_96_p.mp4", "_160.mp4")
-              .replace("_96.mp4", "_160.mp4");
-            if (mediaUrl.includes("http://")) mediaUrl = mediaUrl.replace("http://", "https://");
-          }
-
-          return {
-            id: `song-${item.id || idx}-${Date.now()}`,
-            title: (item.title || item.song || "Track").replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&'),
-            artist: (item.more_info?.primary_artists || item.singers || item.artist || "Aura Artist").replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
-            cover: highResCover || STARTER_TRACKS[0].cover,
-            audioUrl: mediaUrl,
-            lyrics: `Track: "${(item.title || item.song || '').replace(/&quot;/g, '"')}"\n\n(Find full licensed lyrics on Google Search)`
-          };
-        }).filter(t => t.audioUrl);
-
-        if (formatted.length > 0) {
-          setSearchResults(formatted);
-        } else {
-          setSearchFeedback("Track URL decrypt nahi hua. Dusra keyword try karein!");
-        }
+        setSearchResults(formatted);
       } else {
-        setSearchFeedback("Koi track nahi mila. Dusra song search karein!");
+        setSearchFeedback("Koi track nahi mila. 'Rock', 'Chill', 'Piano' ya 'Electronic' try karein!");
       }
-      setLoading(false);
-    };
-
-    script.src = `https://c.saavn.com/api.php?__call=autocomplete.get&query=${encodeURIComponent(term.trim())}&_format=json&_marker=0&ctx=web6dot0&callback=${callbackName}`;
-    document.body.appendChild(script);
+    } catch (err) {
+      console.error(err);
+      setSearchFeedback("Network error. Please try again.");
+    }
+    setLoading(false);
   };
 
   const playSong = (track, list) => {
@@ -134,7 +109,10 @@ export default function App() {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      audioRef.current.play().then(() => setIsPlaying(true)).catch((e) => {
+        console.error("Playback error:", e);
+        setIsPlaying(false);
+      });
     }
   };
 
@@ -230,7 +208,6 @@ export default function App() {
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #00f2fe; cursor: pointer; }
       `}</style>
 
-      {/* Floating Blobs */}
       <div className="aura-bg">
         <div className="aura-blob aura-blob-1" />
         <div className="aura-blob aura-blob-2" />
@@ -250,7 +227,7 @@ export default function App() {
         }}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleNext}
-        preload="metadata"
+        preload="auto"
       />
 
       <header style={{ padding: "16px", zIndex: 10, background: "linear-gradient(180deg, rgba(8,9,13,0.95) 0%, transparent 100%)" }}>
@@ -260,7 +237,7 @@ export default function App() {
             <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px" }}>Aura</span>
           </div>
           <div style={{ padding: "5px 12px", background: "rgba(0,242,254,0.12)", border: "1px solid rgba(0,242,254,0.3)", borderRadius: "20px", fontSize: "11px", fontWeight: 700, color: "#00f2fe", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Sparkles size={12} /> FULL TRACK ACTIVE
+            <Sparkles size={12} /> HD AUDIO ACTIVE
           </div>
         </div>
       </header>
@@ -270,27 +247,27 @@ export default function App() {
           <div style={{ padding: "0 16px" }}>
             <div style={{ margin: "6px 0 20px", padding: "24px 20px", borderRadius: "20px", background: "linear-gradient(135deg, rgba(0,242,254,0.14), rgba(121,40,202,0.14))", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
               <div style={{ fontSize: "11px", color: "#00f2fe", fontWeight: 800, letterSpacing: "2px", marginBottom: "6px" }}>AURA MUSIC STUDIO</div>
-              <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>Universal Streaming.<br />Lossless Audio.</h1>
-              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Every Bollywood, Tollywood & Global full track.</p>
+              <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>Universal Streaming.<br />Direct Play.</h1>
+              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>High quality music streaming with zero playback errors.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" }}>
               {STARTER_TRACKS.map((item) => (
                 <div key={item.id} onClick={() => playSong(item, STARTER_TRACKS)} style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", overflow: "hidden", cursor: "pointer", border: currentTrack?.id === item.id ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.04)" }}>
-                  <img src={item.cover} alt={item.title} style={{ width: "48px", height: "48px", objectFit: "cover", flexShrink: 0 }} onError={(e) => { e.target.src = STARTER_TRACKS[0].cover; }} />
+                  <img src={item.cover} alt={item.title} style={{ width: "48px", height: "48px", objectFit: "cover", flexShrink: 0 }} />
                   <span style={{ fontSize: "12px", fontWeight: 700, padding: "0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
                 </div>
               ))}
             </div>
 
-            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Featured Songs</h3>
+            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Featured Tracks</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {STARTER_TRACKS.map((track) => {
                 const isCurrent = currentTrack?.id === track.id;
                 return (
                   <div key={track.id} onClick={() => playSong(track, STARTER_TRACKS)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", borderRadius: "8px", background: isCurrent ? "rgba(0,242,254,0.08)" : "transparent", cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
-                      <img src={track.cover} alt={track.title} style={{ width: "44px", height: "44px", borderRadius: "6px", objectFit: "cover" }} onError={(e) => { e.target.src = STARTER_TRACKS[0].cover; }} />
+                      <img src={track.cover} alt={track.title} style={{ width: "44px", height: "44px", borderRadius: "6px", objectFit: "cover" }} />
                       <div style={{ overflow: "hidden" }}>
                         <div style={{ fontSize: "14px", fontWeight: 700, color: isCurrent ? "#00f2fe" : "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
                         <div style={{ fontSize: "12px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
@@ -308,10 +285,10 @@ export default function App() {
 
         {navTab === "search" && (
           <div style={{ padding: "0 16px" }}>
-            <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Any Song</h2>
+            <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Library</h2>
             <form onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }} style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fff", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px" }}>
               <Search size={18} color="#08090d" />
-              <input type="text" placeholder="Falak Tak Chal, Khuda Jaane, Starboy..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
+              <input type="text" placeholder="Search rock, chill, pop, electronic..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
               {loading ? <Loader2 size={18} className="animate-spin" color="#08090d" /> : (
                 <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Go</button>
               )}
@@ -324,7 +301,7 @@ export default function App() {
                 const isCurrent = currentTrack?.id === track.id;
                 return (
                   <div key={track.id} onClick={() => playSong(track, searchResults.length > 0 ? searchResults : STARTER_TRACKS)} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "8px", background: isCurrent ? "rgba(0,242,254,0.08)" : "rgba(255,255,255,0.03)", cursor: "pointer" }}>
-                    <img src={track.cover} alt={track.title} style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "cover" }} onError={(e) => { e.target.src = STARTER_TRACKS[0].cover; }} />
+                    <img src={track.cover} alt={track.title} style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "cover" }} />
                     <div style={{ flex: 1, overflow: "hidden" }}>
                       <div style={{ fontSize: "14px", fontWeight: 700, color: isCurrent ? "#00f2fe" : "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
                       <div style={{ fontSize: "12px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
@@ -357,7 +334,7 @@ export default function App() {
       <div onClick={() => setFullPlayerOpen(true)} style={{ position: "fixed", bottom: "64px", left: "8px", right: "8px", height: "56px", background: "rgba(18, 22, 34, 0.96)", backdropFilter: "blur(25px)", borderRadius: "8px", border: "1px solid rgba(0, 242, 254, 0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", zIndex: 90, cursor: "pointer" }}>
         <div style={{ position: "absolute", bottom: 0, left: 0, height: "2px", width: `${progressPct}%`, background: "#00f2fe", borderRadius: "2px" }} />
         <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
-          <img src={currentTrack.cover} alt="cover" style={{ width: "40px", height: "40px", borderRadius: "4px", objectFit: "cover" }} onError={(e) => { e.target.src = STARTER_TRACKS[0].cover; }} />
+          <img src={currentTrack.cover} alt="cover" style={{ width: "40px", height: "40px", borderRadius: "4px", objectFit: "cover" }} />
           <div style={{ overflow: "hidden" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
             <div style={{ fontSize: "11px", color: "#8b949e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
@@ -398,7 +375,7 @@ export default function App() {
             <button onClick={() => setFullPlayerOpen(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><ChevronDown size={28} /></button>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing on Aura</div>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Lossless Audio Master</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Uncompressed HD</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}><AlignLeft size={20} /></button>
           </div>
@@ -406,11 +383,11 @@ export default function App() {
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0" }}>
             {showLyrics ? (
               <div style={{ width: "100%", height: "280px", background: "rgba(0,0,0,0.3)", borderRadius: "16px", padding: "20px", overflowY: "auto", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Live Track Info</h4>
-                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e4e4e9" }}>{currentTrack.lyrics || "No lyrics available."}</p>
+                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Track Details</h4>
+                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e4e4e9" }}>{currentTrack.lyrics || "No details available."}</p>
               </div>
             ) : (
-              <img src={currentTrack.cover} alt="Big Cover" style={{ width: "100%", maxWidth: "300px", aspectRatio: "1/1", borderRadius: "12px", objectFit: "cover", boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }} onError={(e) => { e.target.src = STARTER_TRACKS[0].cover; }} />
+              <img src={currentTrack.cover} alt="Big Cover" style={{ width: "100%", maxWidth: "300px", aspectRatio: "1/1", borderRadius: "12px", objectFit: "cover", boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }} />
             )}
           </div>
 
