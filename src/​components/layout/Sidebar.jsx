@@ -1,8 +1,8 @@
 import React from "react";
 import { Sparkles, X, BarChart3 } from "lucide-react";
-import { NAV } from "@/lib/constants";
+import { NAV } from "../../lib/constants.js";
 
-export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, setActivePlaylistId, plays }) {
+export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, activePlaylistId, setActivePlaylistId }) {
   return (
     <aside className={`sidebar glass ${sidebarOpen ? "open" : ""}`}>
       <div className="brand">
@@ -10,7 +10,7 @@ export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, se
           <Sparkles size={18} />
         </div>
         <span>AURA</span>
-        <button 
+        <button
           className="icon-btn only-mobile close-side"
           onClick={() => setSidebarOpen(false)}
         >
@@ -19,7 +19,7 @@ export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, se
       </div>
 
       <nav className="nav">
-        {NAV.map((n) => (
+        {NAV && NAV.map((n) => (
           <button
             key={n.id}
             className={`nav-item ${page === n.id ? "active" : ""}`}
@@ -37,8 +37,8 @@ export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, se
 
       <div className="sidebar-footer">
         <div className="mini-stat">
-          <BarChart3 size={14} />
-          <span>{plays || 0} plays tracked</span>
+          <BarChart3 size={16} />
+          <span>Aura v1.0</span>
         </div>
       </div>
     </aside>
