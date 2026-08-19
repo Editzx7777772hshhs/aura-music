@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
-import Sidebar from "@/components/layout/Sidebar.jsx";
-import Topbar from "@/components/layout/Topbar.jsx";
-import MobileNav from "@/components/layout/MobileNav.jsx";
-import Toasts from "@/components/layout/Toasts.jsx";
-import PlayerBar from "@/components/player/PlayerBar.jsx";
-import QueueDrawer from "@/components/player/QueueDrawer.jsx";
-import AddToPlaylistModal from "@/components/modals/AddToPlaylistModal.jsx";
+import Sidebar from "./components/layout/Sidebar.jsx";
+import Topbar from "./components/layout/Topbar.jsx";
+import MobileNav from "./components/layout/MobileNav.jsx";
+import Toasts from "./components/layout/Toasts.jsx";
+import PlayerBar from "./components/player/PlayerBar.jsx";
+import QueueDrawer from "./components/player/QueueDrawer.jsx";
+import AddToPlaylistModal from "./components/modals/AddToPlaylistModal.jsx";
 
-import HomePage from "@/pages/HomePage.jsx";
-import DiscoverPage from "@/pages/DiscoverPage.jsx";
-import SearchPage from "@/pages/SearchPage.jsx";
-import PlaylistsPage from "@/pages/PlaylistsPage.jsx";
-import PlaylistDetail from "@/pages/PlaylistDetail.jsx";
-import TrackListPage from "@/pages/TrackListPage.jsx";
-import SettingsPage from "@/pages/SettingsPage.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import DiscoverPage from "./pages/DiscoverPage.jsx";
+import SearchPage from "./pages/SearchPage.jsx";
+import PlaylistsPage from "./pages/PlaylistsPage.jsx";
+import PlaylistDetail from "./pages/PlaylistDetail.jsx";
+import TrackListPage from "./pages/TrackListPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
 
-import { useYouTubePlayer } from "@/hooks/useYouTubePlayer.js";
-import { searchYouTube } from "@/services/youtubeApi.js";
-import { storageService } from "@/services/storageService.js";
-import { CATALOG_SEED } from "@/data/catalogSeed.js";
+import { useYouTubePlayer } from "./hooks/useYouTubePlayer.js";
+import { searchYouTube } from "./services/youtubeApi.js";
+import { storageService } from "./services/storageService.js";
+import { CATALOG_SEED } from "./data/catalogSeed.js";
 
 export default function App() {
   const [theme, setTheme] = useState("dark");
@@ -103,3 +103,4 @@ export default function App() {
     </div>
   );
 }
+
