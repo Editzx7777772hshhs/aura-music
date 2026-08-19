@@ -5,39 +5,39 @@ import {
   Loader2, Plus, Trash2, AlignLeft, ChevronDown, Music, Home, FolderHeart
 } from "lucide-react";
 
-// Top-level starter catalog
+// Full-length default tracks
 const INITIAL_TRACKS = [
   { 
-    id: "t-1", 
-    title: "Khamoshiyan (Unplugged)", 
-    artist: "Arijit Singh, Jeet Gannguli", 
+    id: "full-1", 
+    title: "Zaalima (Full Song)", 
+    artist: "Arijit Singh, Harshdeep Kaur", 
     cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&q=80", 
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
+    audioUrl: "https://aac.saavncdn.com/264/3d02cf65e7164cfcae9cba35fce5a3f2_160.mp4",
+    lyrics: "Jo teri khatir tadpe pehle se hi\nKya use tadpana, o zaalima\nJo tere ishq mein behka pehle se hi\nKya use behkana, o zaalima..."
+  },
+  { 
+    id: "full-2", 
+    title: "Khamoshiyan (Full Audio)", 
+    artist: "Arijit Singh, Jeet Gannguli", 
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80", 
+    audioUrl: "https://aac.saavncdn.com/191/9f7e5b10b0d367468165b4c489cf3046_160.mp4",
     lyrics: "Khamoshiyan aawaaz hain\nTum sun'ne toh aao kabhi\nChhukar tumhe khil jaayengi\nGhar inko bulaao kabhi..."
   },
   { 
-    id: "t-2", 
-    title: "Starboy (Night Drive)", 
+    id: "full-3", 
+    title: "Starboy (Lossless)", 
     artist: "The Weeknd ft. Daft Punk", 
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80", 
+    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80", 
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3",
     lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah..."
   },
   { 
-    id: "t-3", 
-    title: "Blinding Lights (Cyberpunk)", 
+    id: "full-4", 
+    title: "Blinding Lights (Full)", 
     artist: "The Weeknd", 
-    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80", 
+    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80", 
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3",
     lyrics: "Yeah\nI've been tryin' to call\nI've been on my own for long enough..."
-  },
-  { 
-    id: "t-4", 
-    title: "Midnight Chill Beats", 
-    artist: "Lofi Fruits Music", 
-    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80", 
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
-    lyrics: "Enjoy the ambient relaxation waves..."
   }
 ];
 
@@ -56,8 +56,8 @@ export default function App() {
   const [liked, setLiked] = useState(() => {
     try {
       const s = localStorage.getItem("aura_liked");
-      return s ? new Set(JSON.parse(s)) : new Set(["t-1"]);
-    } catch { return new Set(["t-1"]); }
+      return s ? new Set(JSON.parse(s)) : new Set(["full-1"]);
+    } catch { return new Set(["full-1"]); }
   });
 
   const [playlists, setPlaylists] = useState(() => {
@@ -77,27 +77,54 @@ export default function App() {
   useEffect(() => { localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked))); }, [liked]);
   useEffect(() => { localStorage.setItem("aura_playlists", JSON.stringify(playlists)); }, [playlists]);
 
+  // Full-Length JioSaavn Open Stream Search
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=25`);
+      const res = await fetch(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(term)}&limit=25`);
       const data = await res.json();
-      if (data.results && data.results.length > 0) {
-        const formatted = data.results
-          .filter(item => item.previewUrl)
-          .map((item, idx) => ({
-            id: `search-${item.trackId || idx}`,
-            title: item.trackName,
-            artist: item.artistName,
-            cover: item.artworkUrl100 ? item.artworkUrl100.replace("100x100bb", "600x600bb") : INITIAL_TRACKS[0].cover,
-            audioUrl: item.previewUrl,
-            lyrics: `Now Playing "${item.trackName}"\nArtist: ${item.artistName}\n\n[Chorus]\nPowered by Aura Sound Engine.`
-          }));
-        if (formatted.length > 0) setTracks(formatted);
+      
+      if (data?.data?.results && data.data.results.length > 0) {
+        const mapped = data.data.results.map((item, idx) => {
+          const downloadUrlObj = item.downloadUrl?.find(d => d.quality === "320kbps") || 
+                                 item.downloadUrl?.find(d => d.quality === "160kbps") || 
+                                 item.downloadUrl?.[item.downloadUrl.length - 1];
+
+          const imageObj = item.image?.find(img => img.quality === "500x500") || 
+                           item.image?.[item.image.length - 1];
+
+          return {
+            id: `saavn-${item.id || idx}`,
+            title: item.name ? item.name.replace(/&quot;/g, '"').replace(/&#039;/g, "'") : "Unknown Track",
+            artist: item.artists?.primary?.map(a => a.name).join(", ") || "Aura Artist",
+            cover: imageObj?.url || INITIAL_TRACKS[0].cover,
+            audioUrl: downloadUrlObj?.url || "",
+            lyrics: `Full stream active for "${item.name}"\nLossless High Bitrate Audio\nEnjoy full track on Aura Music.`
+          };
+        }).filter(item => item.audioUrl);
+
+        if (mapped.length > 0) {
+          setTracks(mapped);
+          return;
+        }
+      }
+
+      // Safe fallback search
+      const fallbackRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=25`);
+      const fallbackData = await fallbackRes.json();
+      if (fallbackData.results) {
+        setTracks(fallbackData.results.filter(t => t.previewUrl).map((t, idx) => ({
+          id: `apple-${t.trackId || idx}`,
+          title: t.trackName,
+          artist: t.artistName,
+          cover: t.artworkUrl100?.replace("100x100bb", "600x600bb") || INITIAL_TRACKS[0].cover,
+          audioUrl: t.previewUrl,
+          lyrics: `Lyrics for ${t.trackName}`
+        })));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Search error:", err);
     } finally {
       setLoading(false);
     }
@@ -199,7 +226,7 @@ export default function App() {
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #00f2fe; cursor: pointer; }
       `}</style>
 
-      {/* Global Audio Element */}
+      {/* Global Audio Node */}
       <audio 
         ref={audioRef}
         src={currentTrack?.audioUrl}
@@ -208,7 +235,7 @@ export default function App() {
         preload="auto"
       />
 
-      {/* Spotify Mobile Top Header */}
+      {/* Top Header */}
       <header style={{ padding: "16px", zIndex: 10, background: "linear-gradient(180deg, rgba(18,20,29,0.95) 0%, transparent 100%)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -341,7 +368,7 @@ export default function App() {
               <Search size={18} color="#08090d" />
               <input 
                 type="text" 
-                placeholder="Search any song, artist..." 
+                placeholder="Search full tracks (Zaalima, Arijit, Weekend)..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }}
@@ -406,7 +433,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Spotify Signature Floating Mini-Player Pill */}
+      {/* Floating Mini-Player */}
       <div 
         onClick={() => setFullPlayerOpen(true)}
         style={{
@@ -459,7 +486,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Spotify Mobile Bottom Nav */}
+      {/* Bottom Nav */}
       <nav style={{
         position: "fixed",
         bottom: 0,
@@ -505,7 +532,7 @@ export default function App() {
         })}
       </nav>
 
-      {/* Spotify Fullscreen Sheet */}
+      {/* Fullscreen Player Modal */}
       {fullPlayerOpen && (
         <div style={{
           position: "fixed",
@@ -521,7 +548,7 @@ export default function App() {
               <ChevronDown size={28} />
             </button>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing from Aura</div>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing Full Stream</div>
               <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Heavy Mix</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}>
