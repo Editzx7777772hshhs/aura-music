@@ -10,10 +10,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
-        name: "AURA — Music, your vibe",
+        name: "AURA - Music, your vibe",
         short_name: "AURA",
-        description:
-          "YouTube-powered music discovery app with a glassmorphism player UI.",
+        description: "YouTube-powered music discovery app with a glassmorphism UI",
         theme_color: "#0a0912",
         background_color: "#0a0912",
         display: "standalone",
@@ -42,8 +41,6 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Never cache API calls to the search backend or the YouTube
-        // iframe/player scripts — only cache the app shell + static assets.
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
@@ -58,12 +55,11 @@ export default defineConfig({
       }
     })
   ],
+  resolve: {
+    extensions: [".mjs", ".js", ".ts", ".jsx", ".tsx", ".json"]
+  },
   server: {
     port: 5173,
-    // Proxy /api requests to a local serverless dev server during `npm run dev`.
-    // Point this at wherever you run the functions in ./api locally
-    // (e.g. `vercel dev` on port 3000). Safe to leave as-is if you deploy
-    // the /api functions alongside the frontend on Vercel/Netlify.
     proxy: {
       "/api": {
         target: process.env.VITE_DEV_API_PROXY_TARGET || "http://localhost:3000",
