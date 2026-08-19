@@ -8,7 +8,7 @@ import {
 const STARTER_TRACKS = [
   {
     id: "init-1",
-    title: "Khamoshiyan",
+    title: "Khamoshiyan (Unplugged)",
     artist: "Arijit Singh, Jeet Gannguli",
     cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80",
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
@@ -16,7 +16,7 @@ const STARTER_TRACKS = [
   },
   {
     id: "init-2",
-    title: "Starboy (Cyber Mix)",
+    title: "Starboy (Night Drive)",
     artist: "The Weeknd ft. Daft Punk",
     cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3",
@@ -24,7 +24,7 @@ const STARTER_TRACKS = [
   },
   {
     id: "init-3",
-    title: "Blinding Lights (Synthwave)",
+    title: "Blinding Lights (Cyber)",
     artist: "The Weeknd",
     cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80",
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3",
@@ -40,7 +40,6 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   
   // Full Player & Lyrics Modal States
   const [fullPlayerOpen, setFullPlayerOpen] = useState(false);
@@ -57,19 +56,20 @@ export default function App() {
   const [playlists, setPlaylists] = useState(() => {
     try {
       const saved = localStorage.getItem("aura_playlists");
-      return saved ? JSON.parse(saved) : [{ id: "pl-1", name: "Cyberpunk Night Drive", tracks: STARTER_TRACKS }];
-    } catch { return [{ id: "pl-1", name: "Cyberpunk Night Drive", tracks: STARTER_TRACKS }]; }
+      return saved ? JSON.parse(saved) : [{ id: "pl-1", name: "Night Mix", tracks: STARTER_TRACKS }];
+    } catch { return [{ id: "pl-1", name: "Night Mix", tracks: STARTER_TRACKS }]; }
   });
 
   const [newPlaylistName, setNewPlaylistName] = useState("");
 
-  // Audio Engine State
+  // Smooth Time States
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.9);
   const [isMuted, setIsMuted] = useState(false);
 
   const audioRef = useRef(null);
+  const isScrubbing = useRef(false);
   const currentTrack = queue[queueIndex] || STARTER_TRACKS[0];
 
   useEffect(() => {
@@ -80,15 +80,13 @@ export default function App() {
     localStorage.setItem("aura_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // Robust Search Engine with Multi-Server Fallback
+  // High-Speed Search
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
-    setErrorMessage("");
 
     try {
-      // 1. Primary: Ultra-Fast Global Song Engine
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=30`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=25`);
       const data = await res.json();
 
       if (data.results && data.results.length > 0) {
@@ -98,27 +96,24 @@ export default function App() {
             id: `song-${item.trackId || idx}-${Date.now()}`,
             title: item.trackName,
             artist: item.artistName,
-            album: item.collectionName || "Aura Single",
+            album: item.collectionName || "Aura Studio",
             cover: item.artworkUrl100 ? item.artworkUrl100.replace("100x100bb", "600x600bb") : "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
             audioUrl: item.previewUrl,
-            lyrics: `[00:00.00] Playing "${item.trackName}"\n[00:05.00] Artist: ${item.artistName}\n[00:10.00] Album: ${item.collectionName || "Aura Studio"}\n\n[Chorus]\nHigh-Fidelity Lossless Stream\nBass boost enabled • Aura Neon Engine\nEnjoy the musical vibe!`
+            lyrics: `[Live Stream] ${item.trackName}\nArtist: ${item.artistName}\n\n[Verse]\nEnjoying the track on AURA Lossless Stream.\nFeel the ambient beats.`
           }));
 
         if (formatted.length > 0) {
           setTracks(formatted);
-          return;
         }
       }
-      setErrorMessage("No direct songs found. Try another keyword!");
     } catch (err) {
-      console.error("Search API Failed:", err);
-      setErrorMessage("Network issue. Please try searching again!");
+      console.error("Search error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Safe Play Track
+  // Play Track Smoothly
   const playTrack = (track, list = tracks) => {
     const listIndex = list.findIndex(t => t.id === track.id);
     setQueue(list);
@@ -128,28 +123,29 @@ export default function App() {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.log("Audio play caught:", err);
-        setIsPlaying(false);
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }
     }
   };
 
-  const togglePlayPause = () => {
+  const togglePlayPause = (e) => {
+    if (e) e.stopPropagation();
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(e => console.log(e));
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }
     }
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    if (e) e.stopPropagation();
     if (queue.length === 0) return;
     const nextIdx = (queueIndex + 1) % queue.length;
     const nextSong = queue[nextIdx];
@@ -157,11 +153,12 @@ export default function App() {
     if (audioRef.current) {
       audioRef.current.src = nextSong.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(e => console.log(e));
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
-  const handlePrev = () => {
+  const handlePrev = (e) => {
+    if (e) e.stopPropagation();
     if (queue.length === 0) return;
     const prevIdx = (queueIndex - 1 + queue.length) % queue.length;
     const prevSong = queue[prevIdx];
@@ -169,14 +166,17 @@ export default function App() {
     if (audioRef.current) {
       audioRef.current.src = prevSong.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(e => console.log(e));
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
+  // Glitch-Free Time Tracker
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !isScrubbing.current) {
       setCurrentTime(audioRef.current.currentTime);
-      setDuration(audioRef.current.duration || 0);
+      if (audioRef.current.duration && duration !== audioRef.current.duration) {
+        setDuration(audioRef.current.duration);
+      }
     }
   };
 
@@ -195,7 +195,8 @@ export default function App() {
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = (e) => {
+    if (e) e.stopPropagation();
     if (!audioRef.current) return;
     if (isMuted) {
       audioRef.current.volume = volume || 0.9;
@@ -214,38 +215,39 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#050608", color: "#f8fafc", fontFamily: "'Inter', system-ui, sans-serif", overflow: "hidden", position: "relative" }}>
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#050608", color: "#f8fafc", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden", position: "relative" }}>
       
-      {/* Background Ambient Glow */}
+      {/* Dynamic Ambient Background Glow */}
       <div style={{
         position: "absolute",
-        top: "-20%",
+        top: "-10%",
         right: "5%",
-        width: "550px",
-        height: "550px",
-        background: "radial-gradient(circle, rgba(0, 242, 254, 0.16) 0%, rgba(121, 40, 202, 0.08) 60%, transparent 80%)",
-        filter: "blur(100px)",
+        width: "400px",
+        height: "400px",
+        background: "radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, transparent 70%)",
+        filter: "blur(80px)",
         borderRadius: "50%",
         pointerEvents: "none",
         zIndex: 0
       }} />
 
-      {/* HTML5 Audio Node */}
+      {/* Global Audio Node */}
       <audio 
         ref={audioRef} 
         src={currentTrack?.audioUrl} 
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleNext}
+        preload="auto"
       />
 
       {/* Sidebar */}
-      <aside style={{ width: "250px", background: "rgba(10, 14, 23, 0.75)", backdropFilter: "blur(30px)", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", padding: "28px 18px", zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "21px", fontWeight: 900, color: "#00f2fe", marginBottom: "34px", paddingLeft: "8px", letterSpacing: "1px" }}>
-          <Sparkles size={24} style={{ filter: "drop-shadow(0 0 10px #00f2fe)" }} />
+      <aside style={{ width: "240px", background: "rgba(10, 14, 23, 0.8)", backdropFilter: "blur(20px)", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", padding: "24px 16px", zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "20px", fontWeight: 900, color: "#00f2fe", marginBottom: "30px", paddingLeft: "6px" }}>
+          <Sparkles size={22} style={{ filter: "drop-shadow(0 0 8px #00f2fe)" }} />
           <span>AURA MUSIC</span>
         </div>
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
           {[
             { id: "search", label: "Search & Stream", icon: Search },
             { id: "playlists", label: "Custom Playlists", icon: ListMusic },
@@ -260,37 +262,35 @@ export default function App() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "14px",
-                  padding: "13px 16px",
-                  borderRadius: "14px",
+                  gap: "12px",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
                   border: active ? "1px solid rgba(0, 242, 254, 0.3)" : "1px solid transparent",
-                  background: active ? "linear-gradient(135deg, rgba(0,242,254,0.18), rgba(79,172,254,0.04))" : "transparent",
+                  background: active ? "rgba(0, 242, 254, 0.12)" : "transparent",
                   color: active ? "#00f2fe" : "#94a3b8",
-                  fontSize: "14.5px",
+                  fontSize: "14px",
                   fontWeight: active ? 700 : 500,
                   cursor: "pointer",
-                  textAlign: "left",
-                  boxShadow: active ? "0 0 20px rgba(0,242,254,0.15)" : "none",
-                  transition: "all 0.25s ease"
+                  textAlign: "left"
                 }}
               >
-                <Icon size={19} />
+                <Icon size={18} />
                 <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Create Playlist Widget */}
-        <div style={{ background: "rgba(255,255,255,0.03)", padding: "14px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(10px)" }}>
-          <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "8px", fontWeight: 700 }}>NEW PLAYLIST</div>
+        {/* Create Playlist Box */}
+        <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "6px", fontWeight: 700 }}>NEW PLAYLIST</div>
           <div style={{ display: "flex", gap: "6px" }}>
             <input 
               type="text" 
-              placeholder="Playlist name..." 
+              placeholder="Name..." 
               value={newPlaylistName}
               onChange={(e) => setNewPlaylistName(e.target.value)}
-              style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#fff", padding: "8px", fontSize: "12px", outline: "none" }}
+              style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff", padding: "6px 8px", fontSize: "12px", outline: "none" }}
             />
             <button 
               onClick={() => {
@@ -298,67 +298,61 @@ export default function App() {
                 setPlaylists([...playlists, { id: "pl-" + Date.now(), name: newPlaylistName.trim(), tracks: [currentTrack] }]);
                 setNewPlaylistName("");
               }} 
-              style={{ background: "#00f2fe", border: "none", borderRadius: "8px", color: "#050608", padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center" }}
+              style={{ background: "#00f2fe", border: "none", borderRadius: "6px", color: "#050608", padding: "6px 10px", cursor: "pointer", display: "flex", alignItems: "center" }}
             >
-              <Plus size={16} />
+              <Plus size={15} />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Container */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", paddingBottom: "115px", position: "relative", zIndex: 1 }}>
-        {/* Search Header */}
-        <header style={{ padding: "20px 36px", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* Main Area */}
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", paddingBottom: "110px", zIndex: 1 }}>
+        {/* Top Search */}
+        <header style={{ padding: "16px 28px", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center" }}>
           <form 
             onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }}
-            style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,0.04)", padding: "10px 20px", borderRadius: "30px", width: "100%", maxWidth: "480px", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)" }}
+            style={{ display: "flex", alignItems: "center", gap: "10px", background: "rgba(255,255,255,0.04)", padding: "8px 18px", borderRadius: "24px", width: "100%", maxWidth: "440px", border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            <Search size={17} color="#00f2fe" />
+            <Search size={16} color="#00f2fe" />
             <input 
               type="text" 
-              placeholder="Search any song, singer (Khamoshiyan, Arijit, Weekend)..." 
+              placeholder="Search tracks, singers (Khamoshiyan, Arijit)..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ background: "transparent", border: "none", color: "#fff", outline: "none", width: "100%", fontSize: "14.5px" }}
+              style={{ background: "transparent", border: "none", color: "#fff", outline: "none", width: "100%", fontSize: "14px" }}
             />
-            {loading ? <Loader2 size={18} className="animate-spin" color="#00f2fe" /> : (
-              <button type="submit" style={{ background: "linear-gradient(135deg, #00f2fe, #4facfe)", border: "none", color: "#050608", padding: "6px 16px", borderRadius: "20px", fontSize: "12.5px", fontWeight: 700, cursor: "pointer", boxShadow: "0 0 12px rgba(0,242,254,0.4)" }}>
+            {loading ? <Loader2 size={16} className="animate-spin" color="#00f2fe" /> : (
+              <button type="submit" style={{ background: "#00f2fe", border: "none", color: "#050608", padding: "5px 14px", borderRadius: "16px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
                 Search
               </button>
             )}
           </form>
         </header>
 
-        {/* Main Grid View */}
-        <div style={{ padding: "28px 36px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "18px" }}>
-            {page === "liked" ? "Liked Tracks" : page === "playlists" ? "Custom Playlists" : "Available Tracks"}
+        {/* Tracks Grid */}
+        <div style={{ padding: "24px 28px" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "18px" }}>
+            {page === "liked" ? "Liked Tracks" : page === "playlists" ? "Custom Playlists" : "Tracks Feed"}
           </h2>
 
-          {errorMessage && (
-            <div style={{ padding: "12px 18px", background: "rgba(255,77,109,0.1)", border: "1px solid rgba(255,77,109,0.3)", borderRadius: "12px", color: "#ff4d6d", marginBottom: "20px", fontSize: "14px" }}>
-              {errorMessage}
-            </div>
-          )}
-
           {page === "playlists" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px" }}>
               {playlists.map((pl) => (
-                <div key={pl.id} style={{ background: "rgba(255,255,255,0.03)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(15px)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                    <span style={{ fontWeight: 800, fontSize: "17px", color: "#00f2fe" }}>{pl.name}</span>
-                    <button onClick={() => setPlaylists(playlists.filter(p => p.id !== pl.id))} style={{ background: "none", border: "none", color: "#ff4d6d", cursor: "pointer" }}><Trash2 size={16} /></button>
+                <div key={pl.id} style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <span style={{ fontWeight: 700, fontSize: "16px", color: "#00f2fe" }}>{pl.name}</span>
+                    <button onClick={() => setPlaylists(playlists.filter(p => p.id !== pl.id))} style={{ background: "none", border: "none", color: "#ff4d6d", cursor: "pointer" }}><Trash2 size={15} /></button>
                   </div>
-                  <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 14px 0" }}>{pl.tracks.length} Tracks</p>
-                  <button onClick={() => playTrack(pl.tracks[0], pl.tracks)} style={{ width: "100%", background: "linear-gradient(135deg, #00f2fe, #4facfe)", border: "none", padding: "10px", borderRadius: "10px", color: "#050608", fontWeight: 800, cursor: "pointer" }}>
-                    Play Album
+                  <p style={{ color: "#94a3b8", fontSize: "12px", margin: "0 0 12px 0" }}>{pl.tracks.length} Tracks</p>
+                  <button onClick={() => playTrack(pl.tracks[0], pl.tracks)} style={{ width: "100%", background: "#00f2fe", border: "none", padding: "8px", borderRadius: "8px", color: "#050608", fontWeight: 700, cursor: "pointer" }}>
+                    Play Playlist
                   </button>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(195px, 1fr))", gap: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "18px" }}>
               {(page === "liked" ? queue.filter(t => liked.has(t.id)) : tracks).map((track) => {
                 const isCurrent = currentTrack?.id === track.id;
                 return (
@@ -366,30 +360,28 @@ export default function App() {
                     key={track.id} 
                     onClick={() => playTrack(track, tracks)}
                     style={{
-                      background: isCurrent ? "linear-gradient(180deg, rgba(0, 242, 254, 0.12), rgba(255,255,255,0.02))" : "rgba(255,255,255,0.03)",
-                      padding: "16px",
-                      borderRadius: "18px",
+                      background: isCurrent ? "rgba(0, 242, 254, 0.08)" : "rgba(255,255,255,0.03)",
+                      padding: "12px",
+                      borderRadius: "14px",
                       cursor: "pointer",
-                      border: isCurrent ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.06)",
-                      backdropFilter: "blur(15px)",
-                      boxShadow: isCurrent ? "0 0 25px rgba(0, 242, 254, 0.25)" : "0 8px 20px rgba(0,0,0,0.3)",
-                      transition: "all 0.3s ease"
+                      border: isCurrent ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.05)",
+                      transition: "0.2s transform"
                     }}
                   >
-                    <div style={{ position: "relative", width: "100%", paddingTop: "100%", marginBottom: "14px" }}>
+                    <div style={{ position: "relative", width: "100%", paddingTop: "100%", marginBottom: "10px" }}>
                       <img 
                         src={track.cover} 
                         alt={track.title} 
-                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "12px" }} 
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} 
                       />
                       {isCurrent && isPlaying && (
-                        <div style={{ position: "absolute", bottom: "10px", right: "10px", background: "#00f2fe", borderRadius: "50%", padding: "8px", display: "flex", boxShadow: "0 0 16px #00f2fe" }}>
-                          <Play size={18} fill="#050608" color="#050608" />
+                        <div style={{ position: "absolute", bottom: "8px", right: "8px", background: "#00f2fe", borderRadius: "50%", padding: "6px", display: "flex" }}>
+                          <Play size={15} fill="#050608" color="#050608" />
                         </div>
                       )}
                     </div>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: "15px", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{track.title}</h4>
-                    <p style={{ margin: "0", fontSize: "12.5px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{track.artist}</p>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{track.title}</h4>
+                    <p style={{ margin: "0", fontSize: "12px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{track.artist}</p>
                   </div>
                 );
               })}
@@ -405,61 +397,66 @@ export default function App() {
           bottom: 0,
           left: 0,
           right: 0,
-          height: "92px",
-          background: "rgba(10, 14, 23, 0.75)",
-          backdropFilter: "blur(30px)",
+          height: "86px",
+          background: "rgba(10, 14, 23, 0.9)",
+          backdropFilter: "blur(24px)",
           borderTop: "1px solid rgba(255,255,255,0.08)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 28px",
+          padding: "0 20px",
           zIndex: 100
         }}
       >
-        {/* Track Info (Tap opens Spotify Player View) */}
+        {/* Track Thumbnail Info (Tap opens Full View) */}
         <div 
           onClick={() => setFullPlayerOpen(true)}
-          style={{ display: "flex", alignItems: "center", gap: "16px", width: "290px", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: "12px", width: "260px", cursor: "pointer" }}
         >
-          <img src={currentTrack.cover} alt="cover" style={{ width: "56px", height: "56px", borderRadius: "12px", objectFit: "cover", boxShadow: "0 4px 18px rgba(0, 242, 254, 0.3)" }} />
+          <img src={currentTrack.cover} alt="cover" style={{ width: "50px", height: "50px", borderRadius: "10px", objectFit: "cover" }} />
           <div style={{ overflow: "hidden" }}>
-            <div style={{ fontSize: "14.5px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
-            <div style={{ fontSize: "12.5px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
+            <div style={{ fontSize: "12px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
           </div>
-          <Maximize2 size={16} color="#00f2fe" style={{ marginLeft: "4px" }} />
+          <Maximize2 size={15} color="#00f2fe" style={{ flexShrink: 0 }} />
         </div>
 
         {/* Center Controls */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", width: "45%" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><SkipBack size={20} /></button>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", width: "42%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><SkipBack size={18} /></button>
             <button 
               onClick={togglePlayPause}
-              style={{ width: "42px", height: "42px", borderRadius: "50%", background: "linear-gradient(135deg, #00f2fe, #4facfe)", color: "#050608", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 0 20px rgba(0, 242, 254, 0.5)" }}
+              style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#00f2fe", color: "#050608", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
             >
-              {isPlaying ? <Pause size={20} fill="#050608" /> : <Play size={20} fill="#050608" />}
+              {isPlaying ? <Pause size={18} fill="#050608" /> : <Play size={18} fill="#050608" />}
             </button>
-            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><SkipForward size={20} /></button>
+            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><SkipForward size={18} /></button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%" }}>
-            <span style={{ fontSize: "11px", color: "#64748b", width: "36px", textAlign: "right" }}>{formatTime(currentTime)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+            <span style={{ fontSize: "11px", color: "#64748b", width: "32px", textAlign: "right" }}>{formatTime(currentTime)}</span>
             <input 
               type="range" 
               min="0" 
               max={duration || 100} 
               value={currentTime} 
+              onMouseDown={() => { isScrubbing.current = true; }}
+              onMouseUp={() => { isScrubbing.current = false; }}
+              onTouchStart={() => { isScrubbing.current = true; }}
+              onTouchEnd={() => { isScrubbing.current = false; }}
               onChange={handleSeek}
               style={{ flex: 1, accentColor: "#00f2fe", cursor: "pointer" }} 
             />
-            <span style={{ fontSize: "11px", color: "#64748b", width: "36px" }}>{formatTime(duration)}</span>
+            <span style={{ fontSize: "11px", color: "#64748b", width: "32px" }}>{formatTime(duration)}</span>
           </div>
         </div>
 
         {/* Right Volume / Like */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", width: "240px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "220px", justifyContent: "flex-end" }}>
           <button 
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               const next = new Set(liked);
               if (next.has(currentTrack.id)) next.delete(currentTrack.id);
               else next.add(currentTrack.id);
@@ -467,10 +464,10 @@ export default function App() {
             }} 
             style={{ background: "none", border: "none", color: liked.has(currentTrack.id) ? "#ff4d6d" : "#64748b", cursor: "pointer" }}
           >
-            <Heart size={20} fill={liked.has(currentTrack.id) ? "#ff4d6d" : "none"} />
+            <Heart size={18} fill={liked.has(currentTrack.id) ? "#ff4d6d" : "none"} />
           </button>
           <button onClick={toggleMute} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
-            {isMuted ? <VolumeX size={20} color="#ff4d6d" /> : <Volume2 size={20} />}
+            {isMuted ? <VolumeX size={18} color="#ff4d6d" /> : <Volume2 size={18} />}
           </button>
           <input 
             type="range" 
@@ -479,7 +476,7 @@ export default function App() {
             step="0.01" 
             value={isMuted ? 0 : volume} 
             onChange={handleVolumeChange}
-            style={{ width: "80px", accentColor: "#00f2fe", cursor: "pointer" }} 
+            style={{ width: "70px", accentColor: "#00f2fe", cursor: "pointer" }} 
           />
         </div>
       </footer>
@@ -489,53 +486,52 @@ export default function App() {
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "radial-gradient(circle at 50% 30%, rgba(0, 242, 254, 0.18) 0%, #050608 85%)",
-          backdropFilter: "blur(40px)",
+          background: "radial-gradient(circle at 50% 30%, rgba(0, 242, 254, 0.15) 0%, #050608 85%)",
+          backdropFilter: "blur(30px)",
           zIndex: 999,
           display: "flex",
           flexDirection: "column",
-          padding: "32px 28px",
+          padding: "24px",
           boxSizing: "border-box"
         }}>
           {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <button onClick={() => setFullPlayerOpen(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
-              <ChevronDown size={30} />
+              <ChevronDown size={28} />
             </button>
-            <span style={{ fontSize: "12.5px", fontWeight: 700, letterSpacing: "2px", color: "#00f2fe", textTransform: "uppercase" }}>Playing Lossless Stream</span>
+            <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "1.5px", color: "#00f2fe", textTransform: "uppercase" }}>Playing Lossless Stream</span>
             <button 
               onClick={() => setShowLyricsTab(!showLyricsTab)} 
-              style={{ background: showLyricsTab ? "#00f2fe" : "rgba(255,255,255,0.08)", color: showLyricsTab ? "#050608" : "#fff", border: "none", padding: "8px 16px", borderRadius: "20px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 700 }}
+              style={{ background: showLyricsTab ? "#00f2fe" : "rgba(255,255,255,0.08)", color: showLyricsTab ? "#050608" : "#fff", border: "none", padding: "6px 14px", borderRadius: "16px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}
             >
-              <AlignLeft size={16} />
+              <AlignLeft size={15} />
               <span>Lyrics</span>
             </button>
           </div>
 
           {/* Center Art or Lyrics View */}
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 0" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0" }}>
             {showLyricsTab ? (
-              <div style={{ width: "100%", maxWidth: "480px", height: "360px", background: "rgba(10, 14, 23, 0.7)", borderRadius: "24px", padding: "28px", overflowY: "auto", border: "1px solid rgba(0, 242, 254, 0.2)", backdropFilter: "blur(20px)" }}>
-                <h4 style={{ margin: "0 0 16px 0", color: "#00f2fe", letterSpacing: "1px", textTransform: "uppercase", fontSize: "14px" }}>Aura Lyrics View</h4>
-                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "16px", color: "#e2e8f0" }}>{currentTrack.lyrics}</p>
+              <div style={{ width: "100%", maxWidth: "440px", height: "320px", background: "rgba(10, 14, 23, 0.8)", borderRadius: "20px", padding: "24px", overflowY: "auto", border: "1px solid rgba(0, 242, 254, 0.2)" }}>
+                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe", fontSize: "13px", textTransform: "uppercase" }}>Aura Lyrics</h4>
+                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e2e8f0", margin: 0 }}>{currentTrack.lyrics}</p>
               </div>
             ) : (
-              <div style={{ position: "relative", width: "100%", maxWidth: "330px", aspectRatio: "1/1" }}>
-                <div style={{ position: "absolute", inset: -12, background: "radial-gradient(circle, rgba(0, 242, 254, 0.45), transparent 70%)", filter: "blur(30px)", borderRadius: "24px" }} />
+              <div style={{ position: "relative", width: "100%", maxWidth: "300px", aspectRatio: "1/1" }}>
                 <img 
                   src={currentTrack.cover} 
                   alt="Big Cover" 
-                  style={{ position: "relative", width: "100%", height: "100%", borderRadius: "24px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 20px 40px rgba(0,0,0,0.8)" }} 
+                  style={{ width: "100%", height: "100%", borderRadius: "20px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 16px 36px rgba(0,0,0,0.8)" }} 
                 />
               </div>
             )}
           </div>
 
           {/* Track Info */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "450px", width: "100%", margin: "0 auto 20px auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "420px", width: "100%", margin: "0 auto 16px auto" }}>
             <div>
-              <h2 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: 800, color: "#fff" }}>{currentTrack.title}</h2>
-              <p style={{ margin: 0, fontSize: "16px", color: "#94a3b8" }}>{currentTrack.artist}</p>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: "22px", fontWeight: 800, color: "#fff" }}>{currentTrack.title}</h2>
+              <p style={{ margin: 0, fontSize: "14px", color: "#94a3b8" }}>{currentTrack.artist}</p>
             </div>
             <button 
               onClick={() => {
@@ -546,36 +542,40 @@ export default function App() {
               }} 
               style={{ background: "none", border: "none", color: liked.has(currentTrack.id) ? "#ff4d6d" : "#94a3b8", cursor: "pointer" }}
             >
-              <Heart size={28} fill={liked.has(currentTrack.id) ? "#ff4d6d" : "none"} />
+              <Heart size={26} fill={liked.has(currentTrack.id) ? "#ff4d6d" : "none"} />
             </button>
           </div>
 
           {/* Scrubber */}
-          <div style={{ maxWidth: "450px", width: "100%", margin: "0 auto 26px auto" }}>
+          <div style={{ maxWidth: "420px", width: "100%", margin: "0 auto 20px auto" }}>
             <input 
               type="range" 
               min="0" 
               max={duration || 100} 
               value={currentTime} 
+              onMouseDown={() => { isScrubbing.current = true; }}
+              onMouseUp={() => { isScrubbing.current = false; }}
+              onTouchStart={() => { isScrubbing.current = true; }}
+              onTouchEnd={() => { isScrubbing.current = false; }}
               onChange={handleSeek}
               style={{ width: "100%", accentColor: "#00f2fe", cursor: "pointer", height: "6px" }} 
             />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#64748b", marginTop: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748b", marginTop: "6px" }}>
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
-          {/* Big Center Controls */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "40px", marginBottom: "36px" }}>
-            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><SkipBack size={32} /></button>
+          {/* Big Controls */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "36px", marginBottom: "24px" }}>
+            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><SkipBack size={28} /></button>
             <button 
               onClick={togglePlayPause}
-              style={{ width: "70px", height: "70px", borderRadius: "50%", background: "linear-gradient(135deg, #00f2fe, #4facfe)", color: "#050608", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 0 28px rgba(0, 242, 254, 0.6)" }}
+              style={{ width: "64px", height: "64px", borderRadius: "50%", background: "#00f2fe", color: "#050608", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
             >
-              {isPlaying ? <Pause size={32} fill="#050608" /> : <Play size={32} fill="#050608" />}
+              {isPlaying ? <Pause size={28} fill="#050608" /> : <Play size={28} fill="#050608" />}
             </button>
-            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><SkipForward size={32} /></button>
+            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><SkipForward size={28} /></button>
           </div>
         </div>
       )}
