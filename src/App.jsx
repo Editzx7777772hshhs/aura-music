@@ -1,68 +1,55 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Sparkles, Search, ListMusic, Heart, 
-  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
-  Loader2, Plus, Trash2, AlignLeft, ChevronDown, Maximize2
+import {
+  Sparkles, Search, Compass, Heart,
+  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
+  Loader2, Plus, Trash2, AlignLeft, ChevronDown, Maximize2, Music2, Home, Library, Radio, MoreVertical
 } from "lucide-react";
 
-const STARTER_TRACKS = [
-  {
-    id: "init-1",
-    title: "Khamoshiyan (Unplugged)",
-    artist: "Arijit Singh, Jeet Gannguli",
-    cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
-    lyrics: "Khamoshiyan aawaaz hain\nTum sun'ne toh aao kabhi\nChhukar tumhe khil jaayengi\nGhar inko bulaao kabhi\n\nBe-aitbaar hain bada\nYeh dard hai yeh raahat hai\nKhamoshiyan khamoshiyan..."
-  },
-  {
-    id: "init-2",
-    title: "Starboy (Night Drive)",
-    artist: "The Weeknd ft. Daft Punk",
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3",
-    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah\nMilli point two just to hurt you, ah\nAll red Lamb' just to tease you, ah..."
-  },
-  {
-    id: "init-3",
-    title: "Blinding Lights (Cyber)",
-    artist: "The Weeknd",
-    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3",
-    lyrics: "Yeah\nI've been tryin' to call\nI've been on my own for long enough\nMaybe you can show me how to love, maybe..."
-  }
-];
+// Curated Spotify-Style Catalog
+const FEATURED_SECTIONS = {
+  quickMixes: [
+    { id: "qm-1", title: "Liked Songs", artist: "Auto Playlist", cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3", isLikedCard: true },
+    { id: "qm-2", title: "Midnight Drive", artist: "The Weeknd, Daft Punk", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3" },
+    { id: "qm-3", title: "Arijit Singh Radio", artist: "Arijit Singh, Pritam", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3" },
+    { id: "qm-4", title: "Lo-Fi Beats 2026", artist: "Chillhop Music", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3" },
+    { id: "qm-5", title: "Bollywood Romance", artist: "Jeet Gannguli, Shreya", cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3" },
+    { id: "qm-6", title: "Synthwave Vibes", artist: "RetroWave Masters", cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3" }
+  ],
+  trendingAlbums: [
+    { id: "ta-1", title: "Khamoshiyan (Deluxe)", artist: "Arijit Singh • Jeet Gannguli", cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3" },
+    { id: "ta-2", title: "After Hours (Cyber)", artist: "The Weeknd", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3" },
+    { id: "ta-3", title: "Haunted 3D OST", artist: "Chirantan Bhatt", cover: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3" },
+    { id: "ta-4", title: "Promaan", artist: "Bishrut Saikia", cover: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3" }
+  ]
+};
 
 export default function App() {
-  const [page, setPage] = useState("search");
-  const [tracks, setTracks] = useState(STARTER_TRACKS);
-  const [queue, setQueue] = useState(STARTER_TRACKS);
+  const [navTab, setNavTab] = useState("home"); // 'home' | 'search' | 'library'
+  const [filterChip, setFilterChip] = useState("all"); // 'all' | 'music' | 'podcasts'
+  const [tracks, setTracks] = useState(FEATURESECTION_FALLBACK());
+  const [queue, setQueue] = useState(FEATURESECTION_FALLBACK());
   const [queueIndex, setQueueIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Full Player & Lyrics Modal States
   const [fullPlayerOpen, setFullPlayerOpen] = useState(false);
-  const [showLyricsTab, setShowLyricsTab] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
 
-  // Storage
   const [liked, setLiked] = useState(() => {
     try {
-      const saved = localStorage.getItem("aura_liked");
-      return saved ? new Set(JSON.parse(saved)) : new Set();
+      const s = localStorage.getItem("aura_liked");
+      return s ? new Set(JSON.parse(s)) : new Set(["qm-1", "ta-1"]);
     } catch { return new Set(); }
   });
 
   const [playlists, setPlaylists] = useState(() => {
     try {
-      const saved = localStorage.getItem("aura_playlists");
-      return saved ? JSON.parse(saved) : [{ id: "pl-1", name: "Night Mix", tracks: STARTER_TRACKS }];
-    } catch { return [{ id: "pl-1", name: "Night Mix", tracks: STARTER_TRACKS }]; }
+      const s = localStorage.getItem("aura_playlists");
+      return s ? JSON.parse(s) : [{ id: "p1", name: "Heavy Rotation", tracks: FEATURE_SECTIONS.quickMixes }];
+    } catch { return [{ id: "p1", name: "Heavy Rotation", tracks: FEATURE_SECTIONS.quickMixes }]; }
   });
 
-  const [newPlaylistName, setNewPlaylistName] = useState("");
-
-  // Smooth Time States
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.9);
@@ -70,51 +57,42 @@ export default function App() {
 
   const audioRef = useRef(null);
   const isScrubbing = useRef(false);
-  const currentTrack = queue[queueIndex] || STARTER_TRACKS[0];
+  const currentTrack = queue[queueIndex] || FEATURE_SECTIONS.quickMixes[0];
 
-  useEffect(() => {
-    localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
-  }, [liked]);
+  useEffect(() => { localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked))); }, [liked]);
+  useEffect(() => { localStorage.setItem("aura_playlists", JSON.stringify(playlists)); }, [playlists]);
 
-  useEffect(() => {
-    localStorage.setItem("aura_playlists", JSON.stringify(playlists));
-  }, [playlists]);
+  function FEATURESECTION_FALLBACK() {
+    return [...FEATURE_SECTIONS.quickMixes, ...FEATURE_SECTIONS.trendingAlbums];
+  }
 
-  // High-Speed Search
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
-
     try {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=25`);
       const data = await res.json();
-
       if (data.results && data.results.length > 0) {
         const formatted = data.results
           .filter(item => item.previewUrl)
           .map((item, idx) => ({
-            id: `song-${item.trackId || idx}-${Date.now()}`,
+            id: `search-${item.trackId || idx}`,
             title: item.trackName,
             artist: item.artistName,
-            album: item.collectionName || "Aura Studio",
             cover: item.artworkUrl100 ? item.artworkUrl100.replace("100x100bb", "600x600bb") : "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
             audioUrl: item.previewUrl,
-            lyrics: `[Live Stream] ${item.trackName}\nArtist: ${item.artistName}\n\n[Verse]\nEnjoying the track on AURA Lossless Stream.\nFeel the ambient beats.`
+            lyrics: `Now Playing "${item.trackName}"\nArtist: ${item.artistName}\n\n[Chorus]\nHigh-Fidelity Audio Stream\nPowered by Aura Sound Engine.`
           }));
-
-        if (formatted.length > 0) {
-          setTracks(formatted);
-        }
+        setTracks(formatted);
       }
     } catch (err) {
-      console.error("Search error:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Play Track Smoothly
-  const playTrack = (track, list = tracks) => {
+  const playSong = (track, list = tracks) => {
     const listIndex = list.findIndex(t => t.id === track.id);
     setQueue(list);
     setQueueIndex(listIndex !== -1 ? listIndex : 0);
@@ -123,10 +101,7 @@ export default function App() {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-      }
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
@@ -137,10 +112,7 @@ export default function App() {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-      }
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
@@ -148,8 +120,8 @@ export default function App() {
     if (e) e.stopPropagation();
     if (queue.length === 0) return;
     const nextIdx = (queueIndex + 1) % queue.length;
-    const nextSong = queue[nextIdx];
     setQueueIndex(nextIdx);
+    const nextSong = queue[nextIdx];
     if (audioRef.current) {
       audioRef.current.src = nextSong.audioUrl;
       audioRef.current.load();
@@ -161,8 +133,8 @@ export default function App() {
     if (e) e.stopPropagation();
     if (queue.length === 0) return;
     const prevIdx = (queueIndex - 1 + queue.length) % queue.length;
-    const prevSong = queue[prevIdx];
     setQueueIndex(prevIdx);
+    const prevSong = queue[prevIdx];
     if (audioRef.current) {
       audioRef.current.src = prevSong.audioUrl;
       audioRef.current.load();
@@ -170,7 +142,6 @@ export default function App() {
     }
   };
 
-  // Glitch-Free Time Tracker
   const handleTimeUpdate = () => {
     if (audioRef.current && !isScrubbing.current) {
       setCurrentTime(audioRef.current.currentTime);
@@ -186,27 +157,6 @@ export default function App() {
     if (audioRef.current) audioRef.current.currentTime = time;
   };
 
-  const handleVolumeChange = (e) => {
-    const val = parseFloat(e.target.value);
-    setVolume(val);
-    if (audioRef.current) {
-      audioRef.current.volume = val;
-      setIsMuted(val === 0);
-    }
-  };
-
-  const toggleMute = (e) => {
-    if (e) e.stopPropagation();
-    if (!audioRef.current) return;
-    if (isMuted) {
-      audioRef.current.volume = volume || 0.9;
-      setIsMuted(false);
-    } else {
-      audioRef.current.volume = 0;
-      setIsMuted(true);
-    }
-  };
-
   const formatTime = (secs) => {
     if (isNaN(secs) || !secs) return "0:00";
     const m = Math.floor(secs / 60);
@@ -214,246 +164,344 @@ export default function App() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#050608", color: "#f8fafc", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden", position: "relative" }}>
-      
-      {/* Dynamic Ambient Background Glow */}
-      <div style={{
-        position: "absolute",
-        top: "-10%",
-        right: "5%",
-        width: "400px",
-        height: "400px",
-        background: "radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, transparent 70%)",
-        filter: "blur(80px)",
-        borderRadius: "50%",
-        pointerEvents: "none",
-        zIndex: 0
-      }} />
+  const progressPct = duration ? Math.min(100, (currentTime / duration) * 100) : 0;
 
-      {/* Global Audio Node */}
+  return (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100vh",
+      width: "100vw",
+      background: "#08090d",
+      color: "#f1f3f5",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+      overflow: "hidden",
+      position: "relative"
+    }}>
+      <style>{`
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes pulseGlow {
+          0%, 100% { transform: scale(1); opacity: 0.25; }
+          50% { transform: scale(1.1); opacity: 0.4; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        @keyframes eqWave {
+          0%, 100% { height: 4px; }
+          50% { height: 16px; }
+        }
+
+        .eq-bar-anim { animation: eqWave 0.8s ease-in-out infinite; }
+        .quick-mix-card { transition: transform 0.15s ease, background 0.15s ease; }
+        .quick-mix-card:active { transform: scale(0.97); background: rgba(255,255,255,0.12) !important; }
+        .song-row:active { background: rgba(255,255,255,0.08); }
+        
+        input[type="range"] {
+          -webkit-appearance: none;
+          height: 4px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.18);
+          outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #00f2fe;
+          cursor: pointer;
+        }
+      `}</style>
+
+      {/* Global Audio Element */}
       <audio 
-        ref={audioRef} 
-        src={currentTrack?.audioUrl} 
+        ref={audioRef}
+        src={currentTrack?.audioUrl}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleNext}
         preload="auto"
       />
 
-      {/* Sidebar */}
-      <aside style={{ width: "240px", background: "rgba(10, 14, 23, 0.8)", backdropFilter: "blur(20px)", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", padding: "24px 16px", zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "20px", fontWeight: 900, color: "#00f2fe", marginBottom: "30px", paddingLeft: "6px" }}>
-          <Sparkles size={22} style={{ filter: "drop-shadow(0 0 8px #00f2fe)" }} />
-          <span>AURA MUSIC</span>
-        </div>
+      {/* Top Spotify-Style Header & Filter Chips */}
+      <header style={{ padding: "16px 16px 12px 16px", zIndex: 10, background: "linear-gradient(180deg, rgba(18,20,29,0.95) 0%, transparent 100%)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #00f2fe, #7928ca)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "14px", color: "#08090d" }}>
+              A
+            </div>
+            <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px" }}>Aura</span>
+          </div>
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
-          {[
-            { id: "search", label: "Search & Stream", icon: Search },
-            { id: "playlists", label: "Custom Playlists", icon: ListMusic },
-            { id: "liked", label: "Liked Songs", icon: Heart },
-          ].map((item) => {
-            const Icon = item.icon;
-            const active = page === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setPage(item.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  border: active ? "1px solid rgba(0, 242, 254, 0.3)" : "1px solid transparent",
-                  background: active ? "rgba(0, 242, 254, 0.12)" : "transparent",
-                  color: active ? "#00f2fe" : "#94a3b8",
-                  fontSize: "14px",
-                  fontWeight: active ? 700 : 500,
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Create Playlist Box */}
-        <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "6px", fontWeight: 700 }}>NEW PLAYLIST</div>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <input 
-              type="text" 
-              placeholder="Name..." 
-              value={newPlaylistName}
-              onChange={(e) => setNewPlaylistName(e.target.value)}
-              style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff", padding: "6px 8px", fontSize: "12px", outline: "none" }}
-            />
-            <button 
-              onClick={() => {
-                if (!newPlaylistName.trim()) return;
-                setPlaylists([...playlists, { id: "pl-" + Date.now(), name: newPlaylistName.trim(), tracks: [currentTrack] }]);
-                setNewPlaylistName("");
-              }} 
-              style={{ background: "#00f2fe", border: "none", borderRadius: "6px", color: "#050608", padding: "6px 10px", cursor: "pointer", display: "flex", alignItems: "center" }}
-            >
-              <Plus size={15} />
-            </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ padding: "6px 12px", background: "rgba(0,242,254,0.12)", border: "1px solid rgba(0,242,254,0.3)", borderRadius: "20px", fontSize: "11px", fontWeight: 700, color: "#00f2fe", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Sparkles size={12} /> PRO
+            </div>
           </div>
         </div>
-      </aside>
 
-      {/* Main Area */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", paddingBottom: "110px", zIndex: 1 }}>
-        {/* Top Search */}
-        <header style={{ padding: "16px 28px", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center" }}>
-          <form 
-            onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }}
-            style={{ display: "flex", alignItems: "center", gap: "10px", background: "rgba(255,255,255,0.04)", padding: "8px 18px", borderRadius: "24px", width: "100%", maxWidth: "440px", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <Search size={16} color="#00f2fe" />
-            <input 
-              type="text" 
-              placeholder="Search tracks, singers (Khamoshiyan, Arijit)..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ background: "transparent", border: "none", color: "#fff", outline: "none", width: "100%", fontSize: "14px" }}
-            />
-            {loading ? <Loader2 size={16} className="animate-spin" color="#00f2fe" /> : (
-              <button type="submit" style={{ background: "#00f2fe", border: "none", color: "#050608", padding: "5px 14px", borderRadius: "16px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
-                Search
-              </button>
-            )}
-          </form>
-        </header>
+        {/* Categories / Filter Chips */}
+        <div style={{ display: "flex", gap: "8px", overflowX: "auto" }} className="hide-scroll">
+          {[
+            { id: "all", label: "All" },
+            { id: "music", label: "Music" },
+            { id: "podcasts", label: "Podcasts" },
+            { id: "ambient", label: "Chill Vibes" }
+          ].map(chip => (
+            <button
+              key={chip.id}
+              onClick={() => setFilterChip(chip.id)}
+              style={{
+                padding: "7px 16px",
+                borderRadius: "20px",
+                border: "none",
+                background: filterChip === chip.id ? "#00f2fe" : "rgba(255,255,255,0.08)",
+                color: filterChip === chip.id ? "#08090d" : "#f1f3f5",
+                fontSize: "13px",
+                fontWeight: filterChip === chip.id ? 700 : 500,
+                cursor: "pointer",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </header>
 
-        {/* Tracks Grid */}
-        <div style={{ padding: "24px 28px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "18px" }}>
-            {page === "liked" ? "Liked Tracks" : page === "playlists" ? "Custom Playlists" : "Tracks Feed"}
-          </h2>
-
-          {page === "playlists" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px" }}>
-              {playlists.map((pl) => (
-                <div key={pl.id} style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "16px", color: "#00f2fe" }}>{pl.name}</span>
-                    <button onClick={() => setPlaylists(playlists.filter(p => p.id !== pl.id))} style={{ background: "none", border: "none", color: "#ff4d6d", cursor: "pointer" }}><Trash2 size={15} /></button>
-                  </div>
-                  <p style={{ color: "#94a3b8", fontSize: "12px", margin: "0 0 12px 0" }}>{pl.tracks.length} Tracks</p>
-                  <button onClick={() => playTrack(pl.tracks[0], pl.tracks)} style={{ width: "100%", background: "#00f2fe", border: "none", padding: "8px", borderRadius: "8px", color: "#050608", fontWeight: 700, cursor: "pointer" }}>
-                    Play Playlist
-                  </button>
+      {/* Main Scrollable View */}
+      <main className="hide-scroll" style={{ flex: 1, overflowY: "auto", paddingBottom: "140px" }}>
+        
+        {/* ================= VIEW: HOME FEED ================= */}
+        {navTab === "home" && (
+          <div style={{ padding: "0 16px" }}>
+            {/* 2x3 Quick Mix Grid (Spotify Signature Feature) */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", margin: "14px 0 24px 0" }}>
+              {FEATURE_SECTIONS.quickMixes.map(item => (
+                <div
+                  key={item.id}
+                  className="quick-mix-card"
+                  onClick={() => playSong(item, FEATURE_SECTIONS.quickMixes)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    border: currentTrack?.id === item.id ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.04)"
+                  }}
+                >
+                  {item.isLikedCard ? (
+                    <div style={{ width: "48px", height: "48px", background: "linear-gradient(135deg, #450af5, #c4efd9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Heart size={20} fill="#fff" color="#fff" />
+                    </div>
+                  ) : (
+                    <img src={item.cover} alt={item.title} style={{ width: "48px", height: "48px", objectFit: "cover", flexShrink: 0 }} />
+                  )}
+                  <span style={{ fontSize: "12.5px", fontWeight: 700, padding: "0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.title}
+                  </span>
                 </div>
               ))}
             </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "18px" }}>
-              {(page === "liked" ? queue.filter(t => liked.has(t.id)) : tracks).map((track) => {
-                const isCurrent = currentTrack?.id === track.id;
-                return (
+
+            {/* Horizontal Carousel: Albums Featuring Songs You Like */}
+            <div style={{ marginBottom: "26px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 12px 0", letterSpacing: "-0.3px" }}>Albums featuring songs you like</h3>
+              <div style={{ display: "flex", gap: "14px", overflowX: "auto", paddingBottom: "6px" }} className="hide-scroll">
+                {FEATURE_SECTIONS.trendingAlbums.map(album => (
                   <div 
-                    key={track.id} 
-                    onClick={() => playTrack(track, tracks)}
-                    style={{
-                      background: isCurrent ? "rgba(0, 242, 254, 0.08)" : "rgba(255,255,255,0.03)",
-                      padding: "12px",
-                      borderRadius: "14px",
-                      cursor: "pointer",
-                      border: isCurrent ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.05)",
-                      transition: "0.2s transform"
-                    }}
+                    key={album.id}
+                    onClick={() => playSong(album, FEATURE_SECTIONS.trendingAlbums)}
+                    style={{ width: "135px", flexShrink: 0, cursor: "pointer" }}
                   >
-                    <div style={{ position: "relative", width: "100%", paddingTop: "100%", marginBottom: "10px" }}>
-                      <img 
-                        src={track.cover} 
-                        alt={track.title} 
-                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} 
-                      />
-                      {isCurrent && isPlaying && (
-                        <div style={{ position: "absolute", bottom: "8px", right: "8px", background: "#00f2fe", borderRadius: "50%", padding: "6px", display: "flex" }}>
-                          <Play size={15} fill="#050608" color="#050608" />
-                        </div>
-                      )}
-                    </div>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{track.title}</h4>
-                    <p style={{ margin: "0", fontSize: "12px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{track.artist}</p>
+                    <img src={album.cover} alt={album.title} style={{ width: "135px", height: "135px", borderRadius: "8px", objectFit: "cover", marginBottom: "8px", boxShadow: "0 6px 14px rgba(0,0,0,0.4)" }} />
+                    <div style={{ fontSize: "13px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</div>
+                    <div style={{ fontSize: "11.5px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.artist}</div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Vertical Feed: Start Listening */}
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#8b949e", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>Jump into a session</div>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 12px 0" }}>Start listening</h3>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {tracks.map(track => {
+                  const isCurrent = currentTrack?.id === track.id;
+                  return (
+                    <div
+                      key={track.id}
+                      className="song-row"
+                      onClick={() => playSong(track, tracks)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 10px",
+                        borderRadius: "8px",
+                        background: isCurrent ? "rgba(0,242,254,0.08)" : "transparent",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+                        <img src={track.cover} alt={track.title} style={{ width: "44px", height: "44px", borderRadius: "6px", objectFit: "cover" }} />
+                        <div style={{ overflow: "hidden" }}>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: isCurrent ? "#00f2fe" : "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
+                          <div style={{ fontSize: "12px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        {isCurrent && isPlaying && (
+                          <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: "14px" }}>
+                            <div className="eq-bar-anim" style={{ width: "3px", background: "#00f2fe", borderRadius: "1px", animationDelay: "0s" }} />
+                            <div className="eq-bar-anim" style={{ width: "3px", background: "#00f2fe", borderRadius: "1px", animationDelay: "0.2s" }} />
+                            <div className="eq-bar-anim" style={{ width: "3px", background: "#00f2fe", borderRadius: "1px", animationDelay: "0.4s" }} />
+                          </div>
+                        )}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const next = new Set(liked);
+                            if (next.has(track.id)) next.delete(track.id);
+                            else next.add(track.id);
+                            setLiked(next);
+                          }}
+                          style={{ background: "none", border: "none", color: liked.has(track.id) ? "#00f2fe" : "#8b949e", cursor: "pointer", padding: "4px" }}
+                        >
+                          <Heart size={18} fill={liked.has(track.id) ? "#00f2fe" : "none"} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= VIEW: SEARCH ================= */}
+        {navTab === "search" && (
+          <div style={{ padding: "0 16px" }}>
+            <h2 style={{ fontSize: "24px", fontWeight: 800, margin: "10px 0 16px 0" }}>Search</h2>
+            
+            {/* Search Pill Input */}
+            <form 
+              onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }}
+              style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fff", padding: "10px 14px", borderRadius: "8px", marginBottom: "20px" }}
+            >
+              <Search size={18} color="#08090d" />
+              <input 
+                type="text" 
+                placeholder="What do you want to listen to?" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }}
+              />
+              {loading && <Loader2 size={16} className="animate-spin" color="#08090d" />}
+            </form>
+
+            <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Search Results</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {tracks.map(track => (
+                <div 
+                  key={track.id}
+                  onClick={() => playSong(track, tracks)}
+                  style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", cursor: "pointer" }}
+                >
+                  <img src={track.cover} alt={track.title} style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "cover" }} />
+                  <div style={{ flex: 1, overflow: "hidden" }}>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
+                    <div style={{ fontSize: "12px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
+                  </div>
+                  <Play size={16} fill="#00f2fe" color="#00f2fe" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ================= VIEW: LIBRARY ================= */}
+        {navTab === "library" && (
+          <div style={{ padding: "0 16px" }}>
+            <h2 style={{ fontSize: "24px", fontWeight: 800, margin: "10px 0 16px 0" }}>Your Library</h2>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {/* Liked Songs Playlist */}
+              <div 
+                onClick={() => {
+                  const likedList = tracks.filter(t => liked.has(t.id));
+                  if (likedList.length > 0) playSong(likedList[0], likedList);
+                }}
+                style={{ display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}
+              >
+                <div style={{ width: "56px", height: "56px", borderRadius: "6px", background: "linear-gradient(135deg, #450af5, #c4efd9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Heart size={24} fill="#fff" color="#fff" />
+                </div>
+                <div>
+                  <div style={{ fontSize: "15px", fontWeight: 700 }}>Liked Songs</div>
+                  <div style={{ fontSize: "12px", color: "#8b949e" }}>Playlist • {liked.size} songs</div>
+                </div>
+              </div>
+
+              {playlists.map(pl => (
+                <div key={pl.id} onClick={() => playSong(pl.tracks[0], pl.tracks)} style={{ display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "6px", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Music2 size={24} color="#00f2fe" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "15px", fontWeight: 700 }}>{pl.name}</div>
+                    <div style={{ fontSize: "12px", color: "#8b949e" }}>Playlist • Aura Mix</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* Frosted Glass Bottom Player Bar */}
-      <footer 
+      {/* Spotify Signature Floating Mini-Player Pill */}
+      <div 
+        onClick={() => setFullPlayerOpen(true)}
         style={{
           position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: "86px",
-          background: "rgba(10, 14, 23, 0.9)",
-          backdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          bottom: "64px",
+          left: "8px",
+          right: "8px",
+          height: "56px",
+          background: "rgba(18, 22, 34, 0.95)",
+          backdropFilter: "blur(25px)",
+          borderRadius: "8px",
+          border: "1px solid rgba(0, 242, 254, 0.2)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 20px",
-          zIndex: 100
+          padding: "0 12px",
+          zIndex: 90,
+          cursor: "pointer"
         }}
       >
-        {/* Track Thumbnail Info (Tap opens Full View) */}
-        <div 
-          onClick={() => setFullPlayerOpen(true)}
-          style={{ display: "flex", alignItems: "center", gap: "12px", width: "260px", cursor: "pointer" }}
-        >
-          <img src={currentTrack.cover} alt="cover" style={{ width: "50px", height: "50px", borderRadius: "10px", objectFit: "cover" }} />
+        {/* Progress Line */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, height: "2px", width: `${progressPct}%`, background: "#00f2fe", borderRadius: "2px" }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
+          <img src={currentTrack.cover} alt="cover" style={{ width: "40px", height: "40px", borderRadius: "4px", objectFit: "cover" }} />
           <div style={{ overflow: "hidden" }}>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
-            <div style={{ fontSize: "12px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
-          </div>
-          <Maximize2 size={15} color="#00f2fe" style={{ flexShrink: 0 }} />
-        </div>
-
-        {/* Center Controls */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", width: "42%" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><SkipBack size={18} /></button>
-            <button 
-              onClick={togglePlayPause}
-              style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#00f2fe", color: "#050608", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-            >
-              {isPlaying ? <Pause size={18} fill="#050608" /> : <Play size={18} fill="#050608" />}
-            </button>
-            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><SkipForward size={18} /></button>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
-            <span style={{ fontSize: "11px", color: "#64748b", width: "32px", textAlign: "right" }}>{formatTime(currentTime)}</span>
-            <input 
-              type="range" 
-              min="0" 
-              max={duration || 100} 
-              value={currentTime} 
-              onMouseDown={() => { isScrubbing.current = true; }}
-              onMouseUp={() => { isScrubbing.current = false; }}
-              onTouchStart={() => { isScrubbing.current = true; }}
-              onTouchEnd={() => { isScrubbing.current = false; }}
-              onChange={handleSeek}
-              style={{ flex: 1, accentColor: "#00f2fe", cursor: "pointer" }} 
-            />
-            <span style={{ fontSize: "11px", color: "#64748b", width: "32px" }}>{formatTime(duration)}</span>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
+            <div style={{ fontSize: "11px", color: "#8b949e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
           </div>
         </div>
 
-        {/* Right Volume / Like */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "220px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button 
             onClick={(e) => {
               e.stopPropagation();
@@ -461,77 +509,113 @@ export default function App() {
               if (next.has(currentTrack.id)) next.delete(currentTrack.id);
               else next.add(currentTrack.id);
               setLiked(next);
-            }} 
-            style={{ background: "none", border: "none", color: liked.has(currentTrack.id) ? "#ff4d6d" : "#64748b", cursor: "pointer" }}
+            }}
+            style={{ background: "none", border: "none", color: liked.has(currentTrack.id) ? "#00f2fe" : "#8b949e", cursor: "pointer" }}
           >
-            <Heart size={18} fill={liked.has(currentTrack.id) ? "#ff4d6d" : "none"} />
+            <Heart size={18} fill={liked.has(currentTrack.id) ? "#00f2fe" : "none"} />
           </button>
-          <button onClick={toggleMute} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
-            {isMuted ? <VolumeX size={18} color="#ff4d6d" /> : <Volume2 size={18} />}
+          <button 
+            onClick={togglePlayPause}
+            style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: "4px" }}
+          >
+            {isPlaying ? <Pause size={22} fill="#fff" /> : <Play size={22} fill="#fff" />}
           </button>
-          <input 
-            type="range" 
-            min="0" 
-            max="1" 
-            step="0.01" 
-            value={isMuted ? 0 : volume} 
-            onChange={handleVolumeChange}
-            style={{ width: "70px", accentColor: "#00f2fe", cursor: "pointer" }} 
-          />
         </div>
-      </footer>
+      </div>
 
-      {/* Spotify Fullscreen Now Playing View */}
+      {/* Spotify Mobile Bottom Navigation Bar */}
+      <nav style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: "60px",
+        background: "linear-gradient(180deg, rgba(8,9,13,0.85) 0%, #08090d 100%)",
+        backdropFilter: "blur(20px)",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-around",
+        zIndex: 100
+      }}>
+        {[
+          { id: "home", label: "Home", icon: Home },
+          { id: "search", label: "Search", icon: Search },
+          { id: "library", label: "Your Library", icon: Library }
+        ].map(tab => {
+          const Icon = tab.icon;
+          const active = navTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setNavTab(tab.id)}
+              style={{
+                background: "none",
+                border: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                color: active ? "#00f2fe" : "#8b949e",
+                cursor: "pointer",
+                fontSize: "10px",
+                fontWeight: active ? 700 : 500
+              }}
+            >
+              <Icon size={20} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Fullscreen Spotify Experience Modal */}
       {fullPlayerOpen && (
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "radial-gradient(circle at 50% 30%, rgba(0, 242, 254, 0.15) 0%, #050608 85%)",
-          backdropFilter: "blur(30px)",
+          background: "linear-gradient(180deg, #182334 0%, #08090d 100%)",
           zIndex: 999,
           display: "flex",
           flexDirection: "column",
           padding: "24px",
-          boxSizing: "border-box"
+          animation: "slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1)"
         }}>
           {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <button onClick={() => setFullPlayerOpen(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
               <ChevronDown size={28} />
             </button>
-            <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "1.5px", color: "#00f2fe", textTransform: "uppercase" }}>Playing Lossless Stream</span>
-            <button 
-              onClick={() => setShowLyricsTab(!showLyricsTab)} 
-              style={{ background: showLyricsTab ? "#00f2fe" : "rgba(255,255,255,0.08)", color: showLyricsTab ? "#050608" : "#fff", border: "none", padding: "6px 14px", borderRadius: "16px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}
-            >
-              <AlignLeft size={15} />
-              <span>Lyrics</span>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing from playlist</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Aura Heavy Mix</div>
+            </div>
+            <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}>
+              <AlignLeft size={20} />
             </button>
           </div>
 
-          {/* Center Art or Lyrics View */}
+          {/* Big Center Cover or Live Lyrics */}
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0" }}>
-            {showLyricsTab ? (
-              <div style={{ width: "100%", maxWidth: "440px", height: "320px", background: "rgba(10, 14, 23, 0.8)", borderRadius: "20px", padding: "24px", overflowY: "auto", border: "1px solid rgba(0, 242, 254, 0.2)" }}>
-                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe", fontSize: "13px", textTransform: "uppercase" }}>Aura Lyrics</h4>
-                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e2e8f0", margin: 0 }}>{currentTrack.lyrics}</p>
+            {showLyrics ? (
+              <div style={{ width: "100%", height: "300px", background: "rgba(0,0,0,0.3)", borderRadius: "16px", padding: "20px", overflowY: "auto", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Live Lyrics</h4>
+                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "16px", color: "#e4e4e9" }}>{currentTrack.lyrics || "No synced lyrics available."}</p>
               </div>
             ) : (
-              <div style={{ position: "relative", width: "100%", maxWidth: "300px", aspectRatio: "1/1" }}>
-                <img 
-                  src={currentTrack.cover} 
-                  alt="Big Cover" 
-                  style={{ width: "100%", height: "100%", borderRadius: "20px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 16px 36px rgba(0,0,0,0.8)" }} 
-                />
-              </div>
+              <img 
+                src={currentTrack.cover} 
+                alt="Big Cover" 
+                style={{ width: "100%", maxWidth: "320px", aspectRatio: "1/1", borderRadius: "12px", objectFit: "cover", boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }} 
+              />
             )}
           </div>
 
           {/* Track Info */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "420px", width: "100%", margin: "0 auto 16px auto" }}>
-            <div>
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "22px", fontWeight: 800, color: "#fff" }}>{currentTrack.title}</h2>
-              <p style={{ margin: 0, fontSize: "14px", color: "#94a3b8" }}>{currentTrack.artist}</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <div style={{ overflow: "hidden" }}>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</h2>
+              <p style={{ margin: 0, fontSize: "14px", color: "#8b949e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</p>
             </div>
             <button 
               onClick={() => {
@@ -539,43 +623,47 @@ export default function App() {
                 if (next.has(currentTrack.id)) next.delete(currentTrack.id);
                 else next.add(currentTrack.id);
                 setLiked(next);
-              }} 
-              style={{ background: "none", border: "none", color: liked.has(currentTrack.id) ? "#ff4d6d" : "#94a3b8", cursor: "pointer" }}
+              }}
+              style={{ background: "none", border: "none", color: liked.has(currentTrack.id) ? "#00f2fe" : "#8b949e", cursor: "pointer" }}
             >
-              <Heart size={26} fill={liked.has(currentTrack.id) ? "#ff4d6d" : "none"} />
+              <Heart size={26} fill={liked.has(currentTrack.id) ? "#00f2fe" : "none"} />
             </button>
           </div>
 
-          {/* Scrubber */}
-          <div style={{ maxWidth: "420px", width: "100%", margin: "0 auto 20px auto" }}>
+          {/* Seekbar */}
+          <div style={{ marginBottom: "20px" }}>
             <input 
-              type="range" 
-              min="0" 
-              max={duration || 100} 
-              value={currentTime} 
+              type="range"
+              min="0"
+              max={duration || 100}
+              value={currentTime}
               onMouseDown={() => { isScrubbing.current = true; }}
               onMouseUp={() => { isScrubbing.current = false; }}
               onTouchStart={() => { isScrubbing.current = true; }}
               onTouchEnd={() => { isScrubbing.current = false; }}
               onChange={handleSeek}
-              style={{ width: "100%", accentColor: "#00f2fe", cursor: "pointer", height: "6px" }} 
+              style={{ width: "100%", cursor: "pointer" }}
             />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748b", marginTop: "6px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8b949e", marginTop: "6px" }}>
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
-          {/* Big Controls */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "36px", marginBottom: "24px" }}>
-            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><SkipBack size={28} /></button>
+          {/* Big Spotify Media Controls */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", marginBottom: "24px" }}>
+            <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+              <SkipBack size={30} fill="#fff" />
+            </button>
             <button 
               onClick={togglePlayPause}
-              style={{ width: "64px", height: "64px", borderRadius: "50%", background: "#00f2fe", color: "#050608", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{ width: "68px", height: "68px", borderRadius: "50%", background: "#fff", color: "#08090d", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 0 20px rgba(0,242,254,0.3)" }}
             >
-              {isPlaying ? <Pause size={28} fill="#050608" /> : <Play size={28} fill="#050608" />}
+              {isPlaying ? <Pause size={28} fill="#08090d" /> : <Play size={28} fill="#08090d" style={{ marginLeft: "2px" }} />}
             </button>
-            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><SkipForward size={28} /></button>
+            <button onClick={handleNext} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+              <SkipForward size={30} fill="#fff" />
+            </button>
           </div>
         </div>
       )}
