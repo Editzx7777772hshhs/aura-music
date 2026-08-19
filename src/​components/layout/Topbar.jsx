@@ -1,23 +1,54 @@
 import React from "react";
-import { Menu, Search, Sun, Moon, User } from "lucide-react";
+import { Search, Moon, Sun, Menu } from "lucide-react";
 
-export default function Topbar({ setSidebarOpen, setPage, isDark, setTheme }) {
+export default function Topbar({
+  theme,
+  setTheme,
+  setSidebarOpen,
+  page,
+  setPage,
+  searchQuery,
+  setSearchQuery,
+  handleSearch,
+}) {
   return (
-    <header className="topbar">
-      <button className="icon-btn only-mobile" onClick={() => setSidebarOpen(true)}>
-        <Menu size={20} />
-      </button>
-      <div className="topbar-search" onClick={() => setPage("search")}>
-        <Search size={16} />
-        <span>Search tracks, artists, moods…</span>
-      </div>
-      <div className="topbar-actions">
-        <button className="icon-btn" onClick={() => setTheme(isDark ? "light" : "dark")} title="Toggle theme">
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+    <header className="topbar glass">
+      <div className="topbar-left">
+        <button
+          className="icon-btn only-mobile"
+          onClick={() => setSidebarOpen((prev) => !prev)}
+        >
+          <Menu size={20} />
         </button>
-        <div className="avatar" onClick={() => setPage("settings")}>
-          <User size={16} />
-        </div>
+
+        <form
+          className="search-bar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (handleSearch) handleSearch(searchQuery);
+          }}
+        >
+          <Search size={16} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search tracks, artists, moods..."
+            value={searchQuery || ""}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => {
+              if (page !== "search" && setPage) setPage("search");
+            }}
+          />
+        </form>
+      </div>
+
+      <div className="topbar-right">
+        <button
+          className="icon-btn theme-toggle"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          title="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </div>
     </header>
   );
