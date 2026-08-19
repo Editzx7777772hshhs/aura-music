@@ -7,6 +7,7 @@ import PlayerBar from "./components/player/PlayerBar.jsx";
 import QueueDrawer from "./components/player/QueueDrawer.jsx";
 import AddToPlaylistModal from "./components/modals/AddToPlaylistModal.jsx";
 
+
 import HomePage from "./pages/HomePage.jsx";
 import DiscoverPage from "./pages/DiscoverPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
