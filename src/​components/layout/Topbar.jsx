@@ -1,54 +1,16 @@
 import React from "react";
-import { Search, Moon, Sun, Menu } from "lucide-react";
+import { Search, Bell, User } from "lucide-react";
 
-export default function Topbar({
-  theme,
-  setTheme,
-  setSidebarOpen,
-  page,
-  setPage,
-  searchQuery,
-  setSearchQuery,
-  handleSearch,
-}) {
+export default function Topbar() {
   return (
     <header className="topbar glass">
-      <div className="topbar-left">
-        <button
-          className="icon-btn only-mobile"
-          onClick={() => setSidebarOpen((prev) => !prev)}
-        >
-          <Menu size={20} />
-        </button>
-
-        <form
-          className="search-bar"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (handleSearch) handleSearch(searchQuery);
-          }}
-        >
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search tracks, artists, moods..."
-            value={searchQuery || ""}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => {
-              if (page !== "search" && setPage) setPage("search");
-            }}
-          />
-        </form>
+      <div className="search-box">
+        <Search size={18} />
+        <input type="text" placeholder="Search songs, albums, artists..." />
       </div>
-
-      <div className="topbar-right">
-        <button
-          className="icon-btn theme-toggle"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          title="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+      <div className="user-actions">
+        <button className="icon-btn"><Bell size={18} /></button>
+        <button className="icon-btn"><User size={18} /></button>
       </div>
     </header>
   );
