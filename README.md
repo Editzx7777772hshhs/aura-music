@@ -6,7 +6,7 @@ stubbed, and exactly how to run and deploy it.
 
 ## What's actually implemented vs. stubbed
 
-| Feature | Status |
+| Feature | Status |  
 |---|---|
 | UI (home, discover, search, playlists, liked, recent, settings) | ✅ Fully working, same design as the original artifact |
 | Playback | ✅ Real, via YouTube's official embedded IFrame Player API. No downloading/redistribution. |
