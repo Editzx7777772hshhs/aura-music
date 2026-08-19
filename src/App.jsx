@@ -26,7 +26,7 @@ import { CATALOG_SEED } from "./data/catalogSeed";
 
 export default function App() {
   const [theme, setTheme] = useState("dark");
-  const [page, setPage] = useState("home");
+  const [page, setPage] = usestate("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMood, setActiveMood] = useState(null);
 
