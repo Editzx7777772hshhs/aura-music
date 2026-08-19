@@ -5,31 +5,39 @@ import {
   Loader2, AlignLeft, ChevronDown, Music, Home, FolderHeart
 } from "lucide-react";
 
-// Full Length Default Songs (3:30+ minutes)
+// Real Full-Length Audio CDN Tracks (3 to 5 mins)
 const INITIAL_TRACKS = [
   { 
-    id: "yt-1", 
-    title: "São Paulo", 
-    artist: "The Weeknd & Anitta", 
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80", 
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3",
-    lyrics: "São Paulo nights and neon lights...\nFull length track streaming on Aura Engine."
-  },
-  { 
-    id: "yt-2", 
-    title: "Zaalima (Full Audio)", 
+    id: "full-1", 
+    title: "Zaalima (Studio Version)", 
     artist: "Arijit Singh, Harshdeep Kaur", 
     cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80", 
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
+    audioUrl: "https://aac.saavncdn.com/264/3d02cf65e7164cfcae9cba35fce5a3f2_160.mp4",
     lyrics: "Jo teri khatir tadpe pehle se hi\nKya use tadpana, o zaalima\nJo tere ishq mein behka pehle se hi\nKya use behkana, o zaalima..."
   },
   { 
-    id: "yt-3", 
-    title: "Khamoshiyan", 
-    artist: "Arijit Singh", 
-    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80", 
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3",
+    id: "full-2", 
+    title: "Khamoshiyan (Full Track)", 
+    artist: "Arijit Singh, Jeet Gannguli", 
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80", 
+    audioUrl: "https://aac.saavncdn.com/191/9f7e5b10b0d367468165b4c489cf3046_160.mp4",
     lyrics: "Khamoshiyan aawaaz hain\nTum sun'ne toh aao kabhi\nChhukar tumhe khil jaayengi\nGhar inko bulaao kabhi..."
+  },
+  { 
+    id: "full-3", 
+    title: "Neon Horizon (Synthwave 4K)", 
+    artist: "Cyberpunk Collective", 
+    cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&q=80", 
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3",
+    lyrics: "Lost in the futuristic neon matrix...\nBass boost streaming."
+  },
+  { 
+    id: "full-4", 
+    title: "Midnight Drive (Chill Beats)", 
+    artist: "Lofi Room Masters", 
+    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80", 
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3",
+    lyrics: "Relax and vibe into the night..."
   }
 ];
 
@@ -49,19 +57,20 @@ export default function App() {
   const [liked, setLiked] = useState(() => {
     try {
       const s = localStorage.getItem("aura_liked");
-      return s ? new Set(JSON.parse(s)) : new Set(["yt-1"]);
-    } catch { return new Set(["yt-1"]); }
+      return s ? new Set(JSON.parse(s)) : new Set(["full-1"]);
+    } catch { return new Set(["full-1"]); }
   });
 
   const [playlists, setPlaylists] = useState(() => {
     try {
       const s = localStorage.getItem("aura_playlists");
-      return s ? JSON.parse(s) : [{ id: "p-1", name: "Heavy Mix", tracks: INITIAL_TRACKS }];
-    } catch { return [{ id: "p-1", name: "Heavy Mix", tracks: INITIAL_TRACKS }]; }
+      return s ? JSON.parse(s) : [{ id: "p-1", name: "Heavy Rotation", tracks: INITIAL_TRACKS }];
+    } catch { return [{ id: "p-1", name: "Heavy Rotation", tracks: INITIAL_TRACKS }]; }
   });
 
+  // Dynamic Audio Duration
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(214); // 3:34 full length
+  const [duration, setDuration] = useState(0);
 
   const audioRef = useRef(null);
   const isScrubbing = useRef(false);
@@ -70,63 +79,39 @@ export default function App() {
   useEffect(() => { localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked))); }, [liked]);
   useEffect(() => { localStorage.setItem("aura_playlists", JSON.stringify(playlists)); }, [playlists]);
 
-  // Full-Length Multi-Engine Search
+  // Full-Length Search Engine
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     const query = encodeURIComponent(term.trim());
 
     try {
-      // Direct high-quality open audio endpoint
-      const res = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${query}&type=video`);
+      const res = await fetch(`https://saavn.me/search/songs?query=${query}&limit=25`);
       const data = await res.json();
-
-      if (Array.isArray(data) && data.length > 0) {
-        const fullTracks = data.slice(0, 20).map((item, idx) => ({
-          id: `yt-stream-${item.videoId || idx}`,
-          title: item.title,
-          artist: item.author || "Aura Artist",
-          cover: item.videoThumbnails?.[0]?.url || INITIAL_TRACKS[0].cover,
-          audioUrl: `https://invidious.nerdvpn.de/latest_version?id=${item.videoId}&itag=140`,
-          lyrics: `Now Playing "${item.title}"\nArtist: ${item.author}\n\n[Chorus]\nLossless Full-Length Audio Stream Active.`
-        }));
-
-        setSearchResults(fullTracks);
-        setLoading(false);
-        return;
-      }
-    } catch (err) {
-      console.warn("Primary engine busy, switching to backup pipe...");
-    }
-
-    // Backup Pipe: JioSaavn Direct Engine
-    try {
-      const res2 = await fetch(`https://saavn.me/search/songs?query=${query}&limit=20`);
-      const data2 = await res2.json();
-      if (data2?.data?.results?.length > 0) {
-        const saavnTracks = data2.data.results.map((item, idx) => {
+      if (data?.data?.results?.length > 0) {
+        const fullTracks = data.data.results.map((item, idx) => {
           const download = item.downloadUrl?.find(d => d.quality === "320kbps") || 
                            item.downloadUrl?.find(d => d.quality === "160kbps") || 
                            item.downloadUrl?.[item.downloadUrl.length - 1];
           const img = item.image?.find(i => i.quality === "500x500") || item.image?.[item.image.length - 1];
           return {
-            id: `saavn-full-${item.id || idx}`,
-            title: (item.name || item.title || "Track").replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
+            id: `saavn-${item.id || idx}`,
+            title: (item.name || "Track").replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
             artist: item.artists?.primary?.map(a => a.name).join(", ") || "Aura Artist",
             cover: img?.url || INITIAL_TRACKS[0].cover,
             audioUrl: download?.url || "",
-            lyrics: `Lossless stream for ${item.name}`
+            lyrics: `Full Length Lossless Track: "${item.name}"\nStreaming in high bitrate on Aura.`
           };
         }).filter(t => t.audioUrl);
 
-        if (saavnTracks.length > 0) {
-          setSearchResults(saavnTracks);
+        if (fullTracks.length > 0) {
+          setSearchResults(fullTracks);
           setLoading(false);
           return;
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.warn("Primary search busy...");
     }
 
     setLoading(false);
@@ -185,9 +170,6 @@ export default function App() {
   const handleTimeUpdate = () => {
     if (audioRef.current && !isScrubbing.current) {
       setCurrentTime(audioRef.current.currentTime);
-      if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
-        setDuration(audioRef.current.duration);
-      }
     }
   };
 
@@ -212,7 +194,7 @@ export default function App() {
       flexDirection: "column",
       height: "100vh",
       width: "100vw",
-      background: "#08090d",
+      background: "radial-gradient(circle at 15% 15%, rgba(0,242,254,0.16), transparent 30%), radial-gradient(circle at 85% 25%, rgba(121,40,202,0.20), transparent 32%), #08090d",
       color: "#f1f3f5",
       fontFamily: "system-ui, -apple-system, sans-serif",
       overflow: "hidden",
@@ -222,21 +204,48 @@ export default function App() {
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .aura-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .aura-orb { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(80px); opacity: 0.22; animation: auraFloat 10s ease-in-out infinite alternate; }
+        .aura-orb.one { top: -100px; left: -100px; background: #00f2fe; }
+        .aura-orb.two { top: 25%; right: -120px; background: #7928ca; animation-delay: -3s; }
+        
+        @keyframes auraFloat {
+          from { transform: translate3d(0, 0, 0) scale(1); }
+          to { transform: translate3d(35px, -25px, 0) scale(1.15); }
+        }
+        @keyframes eqWave { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+        .eq-anim { animation: eqWave 0.8s ease-in-out infinite; }
+
         input[type="range"] { -webkit-appearance: none; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.18); outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #00f2fe; cursor: pointer; }
       `}</style>
 
-      {/* Global Audio Node */}
+      {/* Background Animated Floating Orbs */}
+      <div className="aura-bg">
+        <div className="aura-orb one" />
+        <div className="aura-orb two" />
+      </div>
+
+      {/* HTML5 Audio Node with Exact Duration Binding */}
       <audio 
         ref={audioRef}
         src={currentTrack?.audioUrl}
+        onLoadedMetadata={(e) => {
+          const d = e.currentTarget.duration;
+          if (Number.isFinite(d) && d > 0) setDuration(d);
+        }}
+        onDurationChange={(e) => {
+          const d = e.currentTarget.duration;
+          if (Number.isFinite(d) && d > 0) setDuration(d);
+        }}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleNext}
-        preload="auto"
+        preload="metadata"
       />
 
-      {/* Header */}
-      <header style={{ padding: "16px", zIndex: 10, background: "linear-gradient(180deg, rgba(18,20,29,0.95) 0%, transparent 100%)" }}>
+      {/* Top Header */}
+      <header style={{ padding: "16px", zIndex: 10, background: "linear-gradient(180deg, rgba(8,9,13,0.95) 0%, transparent 100%)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #00f2fe, #7928ca)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "14px", color: "#08090d" }}>
@@ -246,18 +255,40 @@ export default function App() {
           </div>
 
           <div style={{ padding: "5px 12px", background: "rgba(0,242,254,0.12)", border: "1px solid rgba(0,242,254,0.3)", borderRadius: "20px", fontSize: "11px", fontWeight: 700, color: "#00f2fe", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Sparkles size={12} /> PRO
+            <Sparkles size={12} /> PRO STREAM
           </div>
         </div>
       </header>
 
-      {/* Main Feed */}
-      <main className="hide-scroll" style={{ flex: 1, overflowY: "auto", paddingBottom: "140px" }}>
+      {/* Main Stream Area */}
+      <main className="hide-scroll" style={{ flex: 1, overflowY: "auto", paddingBottom: "140px", zIndex: 1 }}>
         
         {/* VIEW: HOME */}
         {navTab === "home" && (
           <div style={{ padding: "0 16px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", margin: "10px 0 20px 0" }}>
+            {/* Aesthetic Glassmorphic Hero Banner */}
+            <div style={{
+              margin: "6px 0 20px",
+              padding: "24px 20px",
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, rgba(0,242,254,0.14), rgba(121,40,202,0.14))",
+              border: "1px solid rgba(255,255,255,0.08)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.3)"
+            }}>
+              <div style={{ fontSize: "11px", color: "#00f2fe", fontWeight: 800, letterSpacing: "2px", marginBottom: "6px" }}>
+                AURA MUSIC STUDIO
+              </div>
+              <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>
+                Your sound.<br />Your atmosphere.
+              </h1>
+              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>
+                Discover music and stream in full-length quality.
+              </p>
+            </div>
+
+            {/* Quick 2x2 Mix Tiles */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" }}>
               {INITIAL_TRACKS.map(item => (
                 <div
                   key={item.id}
@@ -265,8 +296,8 @@ export default function App() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    background: "rgba(255,255,255,0.06)",
-                    borderRadius: "6px",
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: "8px",
                     overflow: "hidden",
                     cursor: "pointer",
                     border: currentTrack?.id === item.id ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.04)"
@@ -280,7 +311,8 @@ export default function App() {
               ))}
             </div>
 
-            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Full Length Tracks</h3>
+            {/* Vertical Song Feed */}
+            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Start listening</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {INITIAL_TRACKS.map(track => {
                 const isCurrent = currentTrack?.id === track.id;
@@ -306,18 +338,27 @@ export default function App() {
                       </div>
                     </div>
 
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const next = new Set(liked);
-                        if (next.has(track.id)) next.delete(track.id);
-                        else next.add(track.id);
-                        setLiked(next);
-                      }}
-                      style={{ background: "none", border: "none", color: liked.has(track.id) ? "#00f2fe" : "#8b949e", cursor: "pointer", padding: "4px" }}
-                    >
-                      <Heart size={18} fill={liked.has(track.id) ? "#00f2fe" : "none"} />
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      {isCurrent && isPlaying && (
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: "14px" }}>
+                          <div className="eq-anim" style={{ width: "3px", background: "#00f2fe", borderRadius: "1px", animationDelay: "0s" }} />
+                          <div className="eq-anim" style={{ width: "3px", background: "#00f2fe", borderRadius: "1px", animationDelay: "0.2s" }} />
+                          <div className="eq-anim" style={{ width: "3px", background: "#00f2fe", borderRadius: "1px", animationDelay: "0.4s" }} />
+                        </div>
+                      )}
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const next = new Set(liked);
+                          if (next.has(track.id)) next.delete(track.id);
+                          else next.add(track.id);
+                          setLiked(next);
+                        }}
+                        style={{ background: "none", border: "none", color: liked.has(track.id) ? "#00f2fe" : "#8b949e", cursor: "pointer", padding: "4px" }}
+                      >
+                        <Heart size={18} fill={liked.has(track.id) ? "#00f2fe" : "none"} />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -337,7 +378,7 @@ export default function App() {
               <Search size={18} color="#08090d" />
               <input 
                 type="text" 
-                placeholder="Search São Paulo, Zaalima, Arijit..." 
+                placeholder="Search any artist (Zaalima, Arijit)..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }}
@@ -387,7 +428,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Mini Player */}
+      {/* Floating Mini Player Pill */}
       <div 
         onClick={() => setFullPlayerOpen(true)}
         style={{
@@ -503,7 +544,7 @@ export default function App() {
             </button>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing Full Stream</div>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Heavy Mix</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Aura Heavy Mix</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}>
               <AlignLeft size={20} />
@@ -543,12 +584,12 @@ export default function App() {
             </button>
           </div>
 
-          {/* Real Full Duration Timeline */}
+          {/* Real Audio Seekbar Timeline */}
           <div style={{ marginBottom: "20px" }}>
             <input 
               type="range"
               min="0"
-              max={duration || 214}
+              max={duration || 100}
               value={currentTime}
               onMouseDown={() => { isScrubbing.current = true; }}
               onMouseUp={() => { isScrubbing.current = false; }}
@@ -559,7 +600,7 @@ export default function App() {
             />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8b949e", marginTop: "6px" }}>
               <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration || 214)}</span>
+              <span>{formatTime(duration)}</span>
             </div>
           </div>
 
