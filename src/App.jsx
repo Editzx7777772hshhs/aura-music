@@ -7,7 +7,6 @@ import PlayerBar from "./components/player/PlayerBar.jsx";
 import QueueDrawer from "./components/player/QueueDrawer.jsx";
 import AddToPlaylistModal from "./components/modals/AddToPlaylistModal.jsx";
 
-
 import HomePage from "./pages/HomePage.jsx";
 import DiscoverPage from "./pages/DiscoverPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
@@ -77,13 +76,30 @@ export default function App() {
 
   return (
     <div className={`app ${theme}`}>
-      <Sidebar />
+      <Sidebar 
+        page={page} 
+        setPage={setPage} 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen} 
+        activePlaylistId={activePlaylistId} 
+        setActivePlaylistId={setActivePlaylistId} 
+      />
       <div className="main-content">
         <Topbar />
         {page === "home" && <HomePage />}
+        {page === "discover" && <DiscoverPage />}
         {page === "search" && <SearchPage />}
+        {page === "playlists" && <PlaylistsPage />}
+        {page === "playlist-detail" && <PlaylistDetail />}
+        {page === "tracks" && <TrackListPage />}
+        {page === "settings" && <SettingsPage />}
       </div>
-      <PlayerBar />
+      <MobileNav page={page} setPage={setPage} />
+      <PlayerBar currentTrack={currentTrack} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
+      {queueDrawerOpen && <QueueDrawer queue={queue} currentTrack={currentTrack} />}
+      {addToPlaylistTrack && <AddToPlaylistModal track={addToPlaylistTrack} />}
+      <Toasts toasts={toasts} />
+      <div ref={ytContainerRef} id="yt-player-container" style={{ display: "none" }} />
     </div>
   );
 }
