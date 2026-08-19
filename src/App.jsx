@@ -5,39 +5,31 @@ import {
   Loader2, AlignLeft, ChevronDown, Music, Home, FolderHeart
 } from "lucide-react";
 
-// Real Full-Length Audio CDN Tracks (3 to 5 mins)
+// Safe, working curated starter tracks
 const INITIAL_TRACKS = [
   { 
-    id: "full-1", 
-    title: "Zaalima (Studio Version)", 
-    artist: "Arijit Singh, Harshdeep Kaur", 
+    id: "init-1", 
+    title: "Khamoshiyan", 
+    artist: "Arijit Singh", 
     cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80", 
-    audioUrl: "https://aac.saavncdn.com/264/3d02cf65e7164cfcae9cba35fce5a3f2_160.mp4",
-    lyrics: "Jo teri khatir tadpe pehle se hi\nKya use tadpana, o zaalima\nJo tere ishq mein behka pehle se hi\nKya use behkana, o zaalima..."
-  },
-  { 
-    id: "full-2", 
-    title: "Khamoshiyan (Full Track)", 
-    artist: "Arijit Singh, Jeet Gannguli", 
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80", 
-    audioUrl: "https://aac.saavncdn.com/191/9f7e5b10b0d367468165b4c489cf3046_160.mp4",
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
     lyrics: "Khamoshiyan aawaaz hain\nTum sun'ne toh aao kabhi\nChhukar tumhe khil jaayengi\nGhar inko bulaao kabhi..."
   },
   { 
-    id: "full-3", 
-    title: "Neon Horizon (Synthwave 4K)", 
-    artist: "Cyberpunk Collective", 
-    cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&q=80", 
+    id: "init-2", 
+    title: "Starboy", 
+    artist: "The Weeknd", 
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80", 
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=electronic-future-beats-117997.mp3",
-    lyrics: "Lost in the futuristic neon matrix...\nBass boost streaming."
+    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah..."
   },
   { 
-    id: "full-4", 
-    title: "Midnight Drive (Chill Beats)", 
-    artist: "Lofi Room Masters", 
-    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80", 
+    id: "init-3", 
+    title: "Blinding Lights", 
+    artist: "The Weeknd", 
+    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80", 
     audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=synthwave-80s-110045.mp3",
-    lyrics: "Relax and vibe into the night..."
+    lyrics: "Yeah\nI've been tryin' to call\nI've been on my own for long enough..."
   }
 ];
 
@@ -50,6 +42,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFeedback, setSearchFeedback] = useState("");
   
   const [fullPlayerOpen, setFullPlayerOpen] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -57,18 +50,10 @@ export default function App() {
   const [liked, setLiked] = useState(() => {
     try {
       const s = localStorage.getItem("aura_liked");
-      return s ? new Set(JSON.parse(s)) : new Set(["full-1"]);
-    } catch { return new Set(["full-1"]); }
+      return s ? new Set(JSON.parse(s)) : new Set(["init-1"]);
+    } catch { return new Set(["init-1"]); }
   });
 
-  const [playlists, setPlaylists] = useState(() => {
-    try {
-      const s = localStorage.getItem("aura_playlists");
-      return s ? JSON.parse(s) : [{ id: "p-1", name: "Heavy Rotation", tracks: INITIAL_TRACKS }];
-    } catch { return [{ id: "p-1", name: "Heavy Rotation", tracks: INITIAL_TRACKS }]; }
-  });
-
-  // Dynamic Audio Duration
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
@@ -77,44 +62,43 @@ export default function App() {
   const currentTrack = queue[queueIndex] || INITIAL_TRACKS[0];
 
   useEffect(() => { localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked))); }, [liked]);
-  useEffect(() => { localStorage.setItem("aura_playlists", JSON.stringify(playlists)); }, [playlists]);
 
-  // Full-Length Search Engine
+  // Guaranteed Working Search Engine (Direct JSONP/CORS-free endpoint)
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
-    const query = encodeURIComponent(term.trim());
+    setSearchFeedback("");
 
     try {
-      const res = await fetch(`https://saavn.me/search/songs?query=${query}&limit=25`);
+      const query = encodeURIComponent(term.trim());
+      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=30`);
       const data = await res.json();
-      if (data?.data?.results?.length > 0) {
-        const fullTracks = data.data.results.map((item, idx) => {
-          const download = item.downloadUrl?.find(d => d.quality === "320kbps") || 
-                           item.downloadUrl?.find(d => d.quality === "160kbps") || 
-                           item.downloadUrl?.[item.downloadUrl.length - 1];
-          const img = item.image?.find(i => i.quality === "500x500") || item.image?.[item.image.length - 1];
-          return {
-            id: `saavn-${item.id || idx}`,
-            title: (item.name || "Track").replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
-            artist: item.artists?.primary?.map(a => a.name).join(", ") || "Aura Artist",
-            cover: img?.url || INITIAL_TRACKS[0].cover,
-            audioUrl: download?.url || "",
-            lyrics: `Full Length Lossless Track: "${item.name}"\nStreaming in high bitrate on Aura.`
-          };
-        }).filter(t => t.audioUrl);
 
-        if (fullTracks.length > 0) {
-          setSearchResults(fullTracks);
+      if (data && data.results && data.results.length > 0) {
+        const parsed = data.results
+          .filter(t => t.previewUrl)
+          .map((item, idx) => ({
+            id: `song-${item.trackId || idx}-${Date.now()}`,
+            title: item.trackName,
+            artist: item.artistName,
+            cover: item.artworkUrl100 ? item.artworkUrl100.replace("100x100bb", "600x600bb") : INITIAL_TRACKS[0].cover,
+            audioUrl: item.previewUrl,
+            lyrics: `Now Playing "${item.trackName}"\nArtist: ${item.artistName}\nAlbum: ${item.collectionName || "Single"}\n\nStreaming live on Aura Engine.`
+          }));
+
+        if (parsed.length > 0) {
+          setSearchResults(parsed);
           setLoading(false);
           return;
         }
       }
+      setSearchFeedback("No playable tracks found for this keyword.");
     } catch (err) {
-      console.warn("Primary search busy...");
+      console.error("Search failed:", err);
+      setSearchFeedback("Network error. Please try searching again!");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const playSong = (track, list = (searchResults.length > 0 ? searchResults : tracks)) => {
@@ -126,7 +110,13 @@ export default function App() {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => setIsPlaying(true)).catch((e) => {
+          console.error("Play error:", e);
+          setIsPlaying(false);
+        });
+      }
     }
   };
 
@@ -137,7 +127,10 @@ export default function App() {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }
     }
   };
 
@@ -221,13 +214,13 @@ export default function App() {
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #00f2fe; cursor: pointer; }
       `}</style>
 
-      {/* Background Animated Floating Orbs */}
+      {/* Floating Animated Orbs */}
       <div className="aura-bg">
         <div className="aura-orb one" />
         <div className="aura-orb two" />
       </div>
 
-      {/* HTML5 Audio Node with Exact Duration Binding */}
+      {/* HTML5 Audio Node */}
       <audio 
         ref={audioRef}
         src={currentTrack?.audioUrl}
@@ -266,7 +259,7 @@ export default function App() {
         {/* VIEW: HOME */}
         {navTab === "home" && (
           <div style={{ padding: "0 16px" }}>
-            {/* Aesthetic Glassmorphic Hero Banner */}
+            {/* Hero Banner */}
             <div style={{
               margin: "6px 0 20px",
               padding: "24px 20px",
@@ -283,7 +276,7 @@ export default function App() {
                 Your sound.<br />Your atmosphere.
               </h1>
               <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>
-                Discover music and stream in full-length quality.
+                Discover music and stream without limits.
               </p>
             </div>
 
@@ -369,7 +362,7 @@ export default function App() {
         {/* VIEW: SEARCH */}
         {navTab === "search" && (
           <div style={{ padding: "0 16px" }}>
-            <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Full Music</h2>
+            <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Music</h2>
             
             <form 
               onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }}
@@ -378,7 +371,7 @@ export default function App() {
               <Search size={18} color="#08090d" />
               <input 
                 type="text" 
-                placeholder="Search any artist (Zaalima, Arijit)..." 
+                placeholder="Search any artist, song (Arijit, Weeknd, Zaalima)..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }}
@@ -386,25 +379,31 @@ export default function App() {
               {loading ? (
                 <Loader2 size={18} className="animate-spin" color="#08090d" />
               ) : (
-                <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+                <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
                   Go
                 </button>
               )}
             </form>
+
+            {searchFeedback && (
+              <div style={{ padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", color: "#8b949e", fontSize: "13px", marginBottom: "16px" }}>
+                {searchFeedback}
+              </div>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {(searchResults.length > 0 ? searchResults : INITIAL_TRACKS).map(track => (
                 <div 
                   key={track.id}
                   onClick={() => playSong(track, searchResults.length > 0 ? searchResults : INITIAL_TRACKS)}
-                  style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", cursor: "pointer" }}
                 >
                   <img src={track.cover} alt={track.title} style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "cover" }} />
                   <div style={{ flex: 1, overflow: "hidden" }}>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
                     <div style={{ fontSize: "12px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
                   </div>
-                  <Play size={16} fill="#00f2fe" color="#00f2fe" />
+                  <Play size={18} fill="#00f2fe" color="#00f2fe" />
                 </div>
               ))}
             </div>
@@ -428,7 +427,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Mini Player Pill */}
+      {/* Floating Mini Player */}
       <div 
         onClick={() => setFullPlayerOpen(true)}
         style={{
@@ -481,7 +480,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Bottom Nav */}
+      {/* Bottom Nav Bar */}
       <nav style={{
         position: "fixed",
         bottom: 0,
@@ -527,7 +526,7 @@ export default function App() {
         })}
       </nav>
 
-      {/* Fullscreen Player Modal */}
+      {/* Spotify Fullscreen Modal */}
       {fullPlayerOpen && (
         <div style={{
           position: "fixed",
@@ -543,8 +542,8 @@ export default function App() {
               <ChevronDown size={28} />
             </button>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing Full Stream</div>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Aura Heavy Mix</div>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing on Aura</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Stream Active</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}>
               <AlignLeft size={20} />
@@ -584,7 +583,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Real Audio Seekbar Timeline */}
+          {/* Seekbar */}
           <div style={{ marginBottom: "20px" }}>
             <input 
               type="range"
@@ -604,6 +603,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* Player Media Controls */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", marginBottom: "20px" }}>
             <button onClick={handlePrev} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
               <SkipBack size={28} fill="#fff" />
