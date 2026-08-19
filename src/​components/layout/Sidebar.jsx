@@ -1,6 +1,6 @@
 import React from "react";
 import { Sparkles, X, BarChart3 } from "lucide-react";
-import { NAV } from "../../lib/constants";
+import { NAV } from "@/lib/constants";
 
 export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, setActivePlaylistId, plays }) {
   return (
