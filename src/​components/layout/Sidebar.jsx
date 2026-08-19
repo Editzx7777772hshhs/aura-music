@@ -10,10 +10,14 @@ export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, se
           <Sparkles size={18} />
         </div>
         <span>AURA</span>
-        <button className="icon-btn only-mobile close-side" onClick={() => setSidebarOpen(false)}>
+        <button 
+          className="icon-btn only-mobile close-side"
+          onClick={() => setSidebarOpen(false)}
+        >
           <X size={18} />
         </button>
       </div>
+
       <nav className="nav">
         {NAV.map((n) => (
           <button
@@ -22,7 +26,7 @@ export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, se
             onClick={() => {
               setPage(n.id);
               setSidebarOpen(false);
-              setActivePlaylistId(null);
+              if (setActivePlaylistId) setActivePlaylistId(null);
             }}
           >
             <n.icon size={18} />
@@ -30,10 +34,11 @@ export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, se
           </button>
         ))}
       </nav>
+
       <div className="sidebar-footer">
         <div className="mini-stat">
           <BarChart3 size={14} />
-          <span>{plays} plays tracked</span>
+          <span>{plays || 0} plays tracked</span>
         </div>
       </div>
     </aside>
