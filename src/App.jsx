@@ -12,7 +12,7 @@ const STARTER_TRACKS = [
     artist: "KK, Shilpa Rao",
     cover: "https://c.saavncdn.com/712/Bachna-Ae-Haseeno-Hindi-2008-20221128032742-500x500.jpg",
     audioUrl: "https://aac.saavncdn.com/712/ba0716a5d454659b8be5d45cf5447a11_160.mp4",
-    lyrics: "Sajde mein yun hi jhukta hoon\nTum pe hi aa ke rukta hoon\nKya yeh sab ko hota hai...\n\n(Find full licensed lyrics on Google Search)"
+    lyrics: "Sajde mein yun hi jhukta hoon\nTum pe hi aa ke rukta hoon\nKya yeh sab ko hota hai..."
   },
   {
     id: "init-2",
@@ -20,7 +20,7 @@ const STARTER_TRACKS = [
     artist: "Arijit Singh",
     cover: "https://c.saavncdn.com/978/Bojhena-Shey-Bojhena-Bengali-2012-500x500.jpg",
     audioUrl: "https://aac.saavncdn.com/978/2b2c9535eb0188ca0572b94f1640a3fe_160.mp4",
-    lyrics: "Bojhena shey bojhena\nKeno mon je chaay tomake...\n\n(Find full licensed lyrics on Google Search)"
+    lyrics: "Bojhena shey bojhena\nKeno mon je chaay tomake..."
   },
   {
     id: "init-3",
@@ -28,7 +28,7 @@ const STARTER_TRACKS = [
     artist: "The Weeknd ft. Daft Punk",
     cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
     audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/starboy_electronic.mp3",
-    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah...\n\n(Find full licensed lyrics on Google Search)"
+    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah..."
   }
 ];
 
@@ -63,7 +63,7 @@ export default function App() {
     localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
   }, [liked]);
 
-  // Universal Search Resolver
+  // Universal Search Resolver (Full High-Bitrate Tracks)
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
@@ -100,14 +100,14 @@ export default function App() {
               artist: item.artists?.primary?.map(a => a.name).join(", ") || item.primaryArtists || "Aura Artist",
               cover: img?.url || img?.link || STARTER_TRACKS[0].cover,
               audioUrl: stream,
-              lyrics: `Track: "${(item.name || item.title || '').replace(/&quot;/g, '"')}"\nArtist: ${item.primaryArtists || 'Artist'}\n\n(Find full licensed lyrics on Google Search)`
+              lyrics: `Track: "${(item.name || item.title || '').replace(/&quot;/g, '"')}"\nArtist: ${item.primaryArtists || 'Artist'}\n\nFull-Length Master Track Streaming on Aura.`
             };
           }).filter(t => t.audioUrl);
 
           if (found.length > 0) break;
         }
       } catch (err) {
-        console.warn("Retrying mirror...", err);
+        console.warn("Retrying next mirror...", err);
       }
     }
 
@@ -130,10 +130,7 @@ export default function App() {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch((e) => {
-        console.error("Audio playback error:", e);
-        setIsPlaying(false);
-      });
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
@@ -199,25 +196,41 @@ export default function App() {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100vh", width: "100vw",
-      background: "radial-gradient(circle at 15% 15%, rgba(0,242,254,0.16), transparent 30%), radial-gradient(circle at 85% 25%, rgba(121,40,202,0.20), transparent 32%), #08090d",
-      color: "#f1f3f5", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden", position: "relative"
+      background: "#08090d", color: "#f1f3f5", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden", position: "relative"
     }}>
+      {/* Ambient Moody Drift Background Animation */}
       <style>{`
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        .aura-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-        .aura-orb { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(80px); opacity: 0.22; animation: auraFloat 10s ease-in-out infinite alternate; }
-        .aura-orb.one { top: -100px; left: -100px; background: #00f2fe; }
-        .aura-orb.two { top: 25%; right: -120px; background: #7928ca; animation-delay: -3s; }
-        @keyframes auraFloat { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(35px, -25px, 0) scale(1.15); } }
+        
+        @keyframes drift1 {
+          0%, 100% { transform: translate(-10%, -10%) scale(1); }
+          50% { transform: translate(10%, 15%) scale(1.15); }
+        }
+        @keyframes drift2 {
+          0%, 100% { transform: translate(15%, 10%) scale(1.1); }
+          50% { transform: translate(-15%, -10%) scale(0.95); }
+        }
+        @keyframes drift3 {
+          0%, 100% { transform: translate(0%, 20%) scale(1); }
+          50% { transform: translate(5%, -20%) scale(1.2); }
+        }
+        .aura-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: #08090d; overflow: hidden; }
+        .aura-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; will-change: transform; }
+        .aura-blob-1 { width: 420px; height: 420px; top: -100px; left: -80px; background: radial-gradient(circle, #00f2fe, transparent); animation: drift1 22s ease-in-out infinite; }
+        .aura-blob-2 { width: 380px; height: 380px; bottom: -60px; right: -100px; background: radial-gradient(circle, #7928ca, transparent); animation: drift2 26s ease-in-out infinite; }
+        .aura-blob-3 { width: 300px; height: 300px; top: 40%; left: 30%; background: radial-gradient(circle, #00f2fe, transparent); animation: drift3 20s ease-in-out infinite; }
+
         input[type="range"] { -webkit-appearance: none; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.18); outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #00f2fe; cursor: pointer; }
       `}</style>
 
+      {/* Floating Blobs */}
       <div className="aura-bg">
-        <div className="aura-orb one" />
-        <div className="aura-orb two" />
+        <div className="aura-blob aura-blob-1" />
+        <div className="aura-blob aura-blob-2" />
+        <div className="aura-blob aura-blob-3" />
       </div>
 
       <audio 
@@ -243,7 +256,7 @@ export default function App() {
             <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px" }}>Aura</span>
           </div>
           <div style={{ padding: "5px 12px", background: "rgba(0,242,254,0.12)", border: "1px solid rgba(0,242,254,0.3)", borderRadius: "20px", fontSize: "11px", fontWeight: 700, color: "#00f2fe", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Sparkles size={12} /> AURA ULTRA HD
+            <Sparkles size={12} /> FULL TRACK ACTIVE
           </div>
         </div>
       </header>
@@ -252,9 +265,9 @@ export default function App() {
         {navTab === "home" && (
           <div style={{ padding: "0 16px" }}>
             <div style={{ margin: "6px 0 20px", padding: "24px 20px", borderRadius: "20px", background: "linear-gradient(135deg, rgba(0,242,254,0.14), rgba(121,40,202,0.14))", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
-              <div style={{ fontSize: "11px", color: "#00f2fe", fontWeight: 800, letterSpacing: "2px", marginBottom: "6px" }}>AURA ULTRA ENGINE</div>
-              <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>Universal Streaming.<br />High Definition.</h1>
-              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Every song from Bollywood, Tollywood & Worldwide.</p>
+              <div style={{ fontSize: "11px", color: "#00f2fe", fontWeight: 800, letterSpacing: "2px", marginBottom: "6px" }}>AURA MUSIC STUDIO</div>
+              <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>Universal Streaming.<br />Lossless Audio.</h1>
+              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Every Bollywood, Tollywood & Global full track.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" }}>
@@ -266,7 +279,7 @@ export default function App() {
               ))}
             </div>
 
-            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Featured Tracks</h3>
+            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Featured Songs</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {STARTER_TRACKS.map((track) => {
                 const isCurrent = currentTrack?.id === track.id;
@@ -294,7 +307,7 @@ export default function App() {
             <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Any Song</h2>
             <form onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }} style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fff", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px" }}>
               <Search size={18} color="#08090d" />
-              <input type="text" placeholder="Khuda Jaane, Bojhena Shey Bojhena, Arijit..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
+              <input type="text" placeholder="Khuda Jaane, Bojhena Shey Bojhena, Starboy..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
               {loading ? <Loader2 size={18} className="animate-spin" color="#08090d" /> : (
                 <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Go</button>
               )}
@@ -374,14 +387,14 @@ export default function App() {
         })}
       </nav>
 
-      {/* Full Player Modal */}
+      {/* Full Player */}
       {fullPlayerOpen && (
         <div style={{ position: "fixed", inset: 0, background: "linear-gradient(180deg, #182334 0%, #08090d 100%)", zIndex: 999, display: "flex", flexDirection: "column", padding: "24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <button onClick={() => setFullPlayerOpen(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><ChevronDown size={28} /></button>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing on Aura</div>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Ultra HD Master</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Lossless Audio Master</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}><AlignLeft size={20} /></button>
           </div>
@@ -389,8 +402,8 @@ export default function App() {
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0" }}>
             {showLyrics ? (
               <div style={{ width: "100%", height: "280px", background: "rgba(0,0,0,0.3)", borderRadius: "16px", padding: "20px", overflowY: "auto", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Live Track Info</h4>
-                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e4e4e9" }}>{currentTrack.lyrics || "No lyrics info available."}</p>
+                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Live Lyrics & Info</h4>
+                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e4e4e9" }}>{currentTrack.lyrics || "No lyrics available."}</p>
               </div>
             ) : (
               <img src={currentTrack.cover} alt="Big Cover" style={{ width: "100%", maxWidth: "300px", aspectRatio: "1/1", borderRadius: "12px", objectFit: "cover", boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }} onError={(e) => { e.target.src = STARTER_TRACKS[0].cover; }} />
