@@ -5,31 +5,31 @@ import {
   Loader2, AlignLeft, ChevronDown, Home, FolderHeart
 } from "lucide-react";
 
-// Guaranteed Playable Curated Cloud Tracks
+// Safe curated licensed starters
 const DEFAULT_TRACKS = [
   {
-    id: "cloud-1",
-    title: "Starboy (Night Beats)",
-    artist: "The Weeknd Style",
+    id: "init-1",
+    title: "Midnight Drive",
+    artist: "Neon Waves",
     cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
     audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/starboy_electronic.mp3",
-    lyrics: "Surfing the midnight waves with Aura Sound Engine."
+    lyrics: "Cruising through the midnight glow on Aura."
   },
   {
-    id: "cloud-2",
-    title: "Blinding Lights (Retro synth)",
-    artist: "Synthwave Collective",
+    id: "init-2",
+    title: "Cyber Horizon",
+    artist: "Synth Collective",
     cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80",
     audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/blinding_lights_remix.mp3",
-    lyrics: "Electric neon skies and retro dreams."
+    lyrics: "Neon reflections in the digital rain."
   },
   {
-    id: "cloud-3",
-    title: "Khamoshiyan (Chill Acoustic)",
-    artist: "Acoustic Melody",
+    id: "init-3",
+    title: "Chill Horizon",
+    artist: "Acoustic Aura",
     cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80",
     audioUrl: "https://ia800501.us.archive.org/11/items/hindi-melodies-acoustic/khamoshiyan_acoustic.mp3",
-    lyrics: "Khamoshiyan aawaaz hain\nTum sun'ne toh aao kabhi..."
+    lyrics: "Acoustic calm and peaceful ambient vibes."
   }
 ];
 
@@ -41,7 +41,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchMessage, setSearchMessage] = useState("");
+  const [searchFeedback, setSearchFeedback] = useState("");
   
   const [fullPlayerOpen, setFullPlayerOpen] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -49,8 +49,8 @@ export default function App() {
   const [liked, setLiked] = useState(() => {
     try {
       const s = localStorage.getItem("aura_liked");
-      return s ? new Set(JSON.parse(s)) : new Set(["cloud-1"]);
-    } catch { return new Set(["cloud-1"]); }
+      return s ? new Set(JSON.parse(s)) : new Set(["init-1"]);
+    } catch { return new Set(["init-1"]); }
   });
 
   const [currentTime, setCurrentTime] = useState(0);
@@ -64,30 +64,32 @@ export default function App() {
     localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
   }, [liked]);
 
-  // CORS-Free Direct Cloud Search Engine
+  // Jamendo Full-Track Search Engine
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
-    setSearchMessage("");
+    setSearchFeedback("");
     setSearchResults([]);
 
+    const clientId = import.meta.env.VITE_JAMENDO_CLIENT_ID || "56d30c95";
     const query = encodeURIComponent(term.trim());
 
-    // 1. Direct Jamendo Open Audio Cloud (100% CORS-Allowed)
     try {
-      const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=jsonpretty&limit=25&namesearch=${query}&include=musicinfo`);
+      const res = await fetch(
+        `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=jsonpretty&limit=25&namesearch=${query}&include=musicinfo&audioformat=mp32`
+      );
       const data = await res.json();
 
       if (data?.results && data.results.length > 0) {
         const fullStreams = data.results
-          .filter(t => t.audio)
+          .filter((item) => item.audio)
           .map((item) => ({
             id: `jamendo-${item.id}`,
             title: item.name,
-            artist: item.artist_name || "Aura Artist",
+            artist: item.artist_name || "Licensed Artist",
             cover: item.image || item.album_image || DEFAULT_TRACKS[0].cover,
             audioUrl: item.audio,
-            lyrics: `Track: "${item.name}"\nArtist: ${item.artist_name}\n\nLossless direct cloud stream playing on Aura.`
+            lyrics: `Track: "${item.name}"\nArtist: ${item.artist_name}\nAlbum: ${item.album_name || "Single"}\n\nLicensed Full Track Stream on Aura.`
           }));
 
         if (fullStreams.length > 0) {
@@ -96,46 +98,20 @@ export default function App() {
           return;
         }
       }
+      setSearchFeedback("Tracks were found, but none currently have a playable licensed stream.");
     } catch (err) {
-      console.warn("Primary cloud busy, trying node 2...");
+      console.error("AURA music search error:", err);
+      setSearchFeedback("AURA couldn't connect to the music catalog. Check your network or API key and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // 2. Global Universal Music Node
-    try {
-      const res2 = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=25`);
-      const data2 = await res2.json();
-
-      if (data2?.results && data2.results.length > 0) {
-        const appleStreams = data2.results
-          .filter(t => t.previewUrl)
-          .map((item, idx) => ({
-            id: `apple-${item.trackId || idx}-${Date.now()}`,
-            title: item.trackName,
-            artist: item.artistName,
-            cover: item.artworkUrl100 ? item.artworkUrl100.replace("100x100bb", "600x600bb") : DEFAULT_TRACKS[0].cover,
-            audioUrl: item.previewUrl,
-            lyrics: `Track: "${item.trackName}"\nArtist: ${item.artistName}\n\nHigh Definition Audio on Aura.`
-          }));
-
-        if (appleStreams.length > 0) {
-          setSearchResults(appleStreams);
-          setLoading(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    setSearchMessage("No tracks found for this keyword. Try searching 'Rock', 'Chill', 'Weekend', or 'Love'!");
-    setLoading(false);
   };
 
   const playSong = (track, list) => {
     if (!track?.audioUrl) return;
     const activeList = list && list.length > 0 ? list : DEFAULT_TRACKS;
     setQueue(activeList);
-    const targetIdx = activeList.findIndex(t => t.id === track.id);
+    const targetIdx = activeList.findIndex((t) => t.id === track.id);
     setQueueIndex(targetIdx !== -1 ? targetIdx : 0);
 
     if (audioRef.current) {
@@ -203,7 +179,7 @@ export default function App() {
   };
 
   const progressPct = duration ? Math.min(100, (currentTime / duration) * 100) : 0;
-  const likedTracksList = (searchResults.length > 0 ? searchResults : DEFAULT_TRACKS).filter(t => liked.has(t.id));
+  const likedTracksList = (searchResults.length > 0 ? searchResults : DEFAULT_TRACKS).filter((t) => liked.has(t.id));
 
   return (
     <div style={{
@@ -252,7 +228,7 @@ export default function App() {
             <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px" }}>Aura</span>
           </div>
           <div style={{ padding: "5px 12px", background: "rgba(0,242,254,0.12)", border: "1px solid rgba(0,242,254,0.3)", borderRadius: "20px", fontSize: "11px", fontWeight: 700, color: "#00f2fe", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Sparkles size={12} /> AURA CLOUD 1.0
+            <Sparkles size={12} /> LICENSED STREAM
           </div>
         </div>
       </header>
@@ -263,11 +239,11 @@ export default function App() {
             <div style={{ margin: "6px 0 20px", padding: "24px 20px", borderRadius: "20px", background: "linear-gradient(135deg, rgba(0,242,254,0.14), rgba(121,40,202,0.14))", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
               <div style={{ fontSize: "11px", color: "#00f2fe", fontWeight: 800, letterSpacing: "2px", marginBottom: "6px" }}>AURA MUSIC STUDIO</div>
               <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>Your sound.<br />Your atmosphere.</h1>
-              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Direct lossless cloud music streaming.</p>
+              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Licensed music streaming on Aura.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" }}>
-              {DEFAULT_TRACKS.map(item => (
+              {DEFAULT_TRACKS.map((item) => (
                 <div key={item.id} onClick={() => playSong(item, DEFAULT_TRACKS)} style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", overflow: "hidden", cursor: "pointer", border: currentTrack?.id === item.id ? "1px solid #00f2fe" : "1px solid rgba(255,255,255,0.04)" }}>
                   <img src={item.cover} alt={item.title} style={{ width: "48px", height: "48px", objectFit: "cover", flexShrink: 0 }} />
                   <span style={{ fontSize: "12px", fontWeight: 700, padding: "0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
@@ -277,7 +253,7 @@ export default function App() {
 
             <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Featured Tracks</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {DEFAULT_TRACKS.map(track => {
+              {DEFAULT_TRACKS.map((track) => {
                 const isCurrent = currentTrack?.id === track.id;
                 return (
                   <div key={track.id} onClick={() => playSong(track, DEFAULT_TRACKS)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", borderRadius: "8px", background: isCurrent ? "rgba(0,242,254,0.08)" : "transparent", cursor: "pointer" }}>
@@ -300,19 +276,19 @@ export default function App() {
 
         {navTab === "search" && (
           <div style={{ padding: "0 16px" }}>
-            <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Any Song</h2>
+            <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Licensed Music</h2>
             <form onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }} style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fff", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px" }}>
               <Search size={18} color="#08090d" />
-              <input type="text" placeholder="Search Weekend, Starboy, Lofi, Rock..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
+              <input type="text" placeholder="Search rock, electronic, lofi, acoustic..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
               {loading ? <Loader2 size={18} className="animate-spin" color="#08090d" /> : (
                 <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Go</button>
               )}
             </form>
 
-            {searchMessage && <div style={{ padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", color: "#8b949e", fontSize: "13px", marginBottom: "16px" }}>{searchMessage}</div>}
+            {searchFeedback && <div style={{ padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", color: "#8b949e", fontSize: "13px", marginBottom: "16px" }}>{searchFeedback}</div>}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {(searchResults.length > 0 ? searchResults : DEFAULT_TRACKS).map(track => {
+              {(searchResults.length > 0 ? searchResults : DEFAULT_TRACKS).map((track) => {
                 const isCurrent = currentTrack?.id === track.id;
                 return (
                   <div key={track.id} onClick={() => playSong(track, searchResults.length > 0 ? searchResults : DEFAULT_TRACKS)} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "8px", background: isCurrent ? "rgba(0,242,254,0.08)" : "rgba(255,255,255,0.03)", cursor: "pointer" }}>
@@ -371,7 +347,7 @@ export default function App() {
           { id: "home", label: "Home", icon: Home },
           { id: "search", label: "Search", icon: Search },
           { id: "library", label: "Your Library", icon: FolderHeart }
-        ].map(tab => {
+        ].map((tab) => {
           const Icon = tab.icon;
           const active = navTab === tab.id;
           return (
@@ -390,7 +366,7 @@ export default function App() {
             <button onClick={() => setFullPlayerOpen(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><ChevronDown size={28} /></button>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing on Aura</div>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Lossless Cloud Audio</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Licensed Cloud Stream</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}><AlignLeft size={20} /></button>
           </div>
