@@ -1,5 +1,14 @@
-import React from "react";
-import { Sparkles, X, BarChart3, Home, Compass, Search, ListMusic, Music2, Settings } from "lucide-react";
+import {
+  Sparkles,
+  X,
+  BarChart3,
+  Home,
+  Compass,
+  Search,
+  ListMusic,
+  Music2,
+  Settings,
+} from "lucide-react";
 
 const NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
@@ -10,40 +19,53 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar({ page, setPage, sidebarOpen, setSidebarOpen, setActivePlaylistId }) {
+export default function Sidebar({
+  page,
+  setPage,
+  sidebarOpen,
+  setSidebarOpen,
+  setActivePlaylistId,
+}) {
+  const handleNavigation = (id) => {
+    setPage(id);
+    setSidebarOpen(false);
+
+    if (setActivePlaylistId) {
+      setActivePlaylistId(null);
+    }
+  };
+
   return (
     <aside className={`sidebar glass ${sidebarOpen ? "open" : ""}`}>
       <div className="brand">
         <div className="brand-mark">
           <Sparkles size={18} />
         </div>
+
         <span>AURA</span>
+
         <button
+          type="button"
           className="icon-btn only-mobile close-side"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close sidebar"
         >
           <X size={18} />
         </button>
       </div>
 
       <nav className="nav">
-        {NAV_ITEMS.map((n) => {
-          const Icon = n.icon;
-          return (
-            <button
-              key={n.id}
-              className={`nav-item ${page === n.id ? "active" : ""}`}
-              onClick={() => {
-                setPage(n.id);
-                setSidebarOpen(false);
-                if (setActivePlaylistId) setActivePlaylistId(null);
-              }}
-            >
-              <Icon size={18} />
-              <span>{n.label}</span>
-            </button>
-          );
-        })}
+        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+          <button
+            type="button"
+            key={id}
+            className={`nav-item ${page === id ? "active" : ""}`}
+            onClick={() => handleNavigation(id)}
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </button>
+        ))}
       </nav>
 
       <div className="sidebar-footer">
