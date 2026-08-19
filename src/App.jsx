@@ -8,19 +8,19 @@ import {
 const STARTER_TRACKS = [
   {
     id: "init-1",
+    title: "Falak Tak",
+    artist: "Udit Narayan, Mahalakshmi Iyer",
+    cover: "https://c.saavncdn.com/001/Tashan-Hindi-2008-20190329150330-500x500.jpg",
+    audioUrl: "https://aac.saavncdn.com/001/6a0319dbb3b4aaebec56dfa255a2ee21_160.mp4",
+    lyrics: "Falak tak chal saath mere\nFalak tak chal saath chal...\n\n(Find full licensed lyrics on Google Search)"
+  },
+  {
+    id: "init-2",
     title: "Khuda Jaane",
     artist: "KK, Shilpa Rao",
     cover: "https://c.saavncdn.com/712/Bachna-Ae-Haseeno-Hindi-2008-20221128032742-500x500.jpg",
     audioUrl: "https://aac.saavncdn.com/712/ba0716a5d454659b8be5d45cf5447a11_160.mp4",
-    lyrics: "Sajde mein yun hi jhukta hoon\nTum pe hi aa ke rukta hoon\nKya yeh sab ko hota hai..."
-  },
-  {
-    id: "init-2",
-    title: "Bojhena Shey Bojhena",
-    artist: "Arijit Singh",
-    cover: "https://c.saavncdn.com/978/Bojhena-Shey-Bojhena-Bengali-2012-500x500.jpg",
-    audioUrl: "https://aac.saavncdn.com/978/2b2c9535eb0188ca0572b94f1640a3fe_160.mp4",
-    lyrics: "Bojhena shey bojhena\nKeno mon je chaay tomake..."
+    lyrics: "Sajde mein yun hi jhukta hoon\nTum pe hi aa ke rukta hoon...\n\n(Find full licensed lyrics on Google Search)"
   },
   {
     id: "init-3",
@@ -28,7 +28,7 @@ const STARTER_TRACKS = [
     artist: "The Weeknd ft. Daft Punk",
     cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
     audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/starboy_electronic.mp3",
-    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah..."
+    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah...\n\n(Find full licensed lyrics on Google Search)"
   }
 ];
 
@@ -63,60 +63,64 @@ export default function App() {
     localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
   }, [liked]);
 
-  // Universal Search Resolver (Full High-Bitrate Tracks)
-  const searchOnline = async (term) => {
+  // Direct High-Speed JSONP Saavn Resolver (Zero CORS Block)
+  const searchOnline = (term) => {
     if (!term.trim()) return;
     setLoading(true);
     setSearchFeedback("");
 
-    const q = encodeURIComponent(term.trim());
-    const endpoints = [
-      `https://saavn.dev/api/search/songs?query=${q}&limit=20`,
-      `https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${q}&limit=20`
-    ];
+    const script = document.createElement("script");
+    const callbackName = "saavn_cb_" + Math.floor(Math.random() * 1000000);
 
-    let found = [];
+    const timer = setTimeout(() => {
+      setLoading(false);
+      setSearchFeedback("Search timeout. Please try again.");
+    }, 6000);
 
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const list = data?.data?.results || data?.results || [];
+    window[callbackName] = (data) => {
+      clearTimeout(timer);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
 
-        if (Array.isArray(list) && list.length > 0) {
-          found = list.map((item, idx) => {
-            const dl = item.downloadUrl?.find(d => d.quality === "160kbps") ||
-                       item.downloadUrl?.find(d => d.quality === "320kbps") ||
-                       (Array.isArray(item.downloadUrl) ? item.downloadUrl[item.downloadUrl.length - 1] : null);
+      const list = data?.results || data?.songs?.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        const formatted = list.map((item, idx) => {
+          let rawImg = item.image || item.album_image || "";
+          if (rawImg.includes("http://")) rawImg = rawImg.replace("http://", "https://");
+          const highResCover = rawImg.replace(/150x150/g, "500x500");
 
-            const img = item.image?.find(i => i.quality === "500x500") ||
-                        (Array.isArray(item.image) ? item.image[item.image.length - 1] : null);
+          let mediaUrl = item.media_preview_url || item.more_info?.encrypted_media_url || "";
+          if (mediaUrl) {
+            mediaUrl = mediaUrl
+              .replace("preview.saavncdn.com", "aac.saavncdn.com")
+              .replace("_96_p.mp4", "_160.mp4")
+              .replace("_96.mp4", "_160.mp4");
+            if (mediaUrl.includes("http://")) mediaUrl = mediaUrl.replace("http://", "https://");
+          }
 
-            const stream = dl?.url || dl?.link || (typeof item.downloadUrl === "string" ? item.downloadUrl : "");
+          return {
+            id: `song-${item.id || idx}-${Date.now()}`,
+            title: (item.title || item.song || "Track").replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&'),
+            artist: (item.more_info?.primary_artists || item.singers || item.artist || "Aura Artist").replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
+            cover: highResCover || STARTER_TRACKS[0].cover,
+            audioUrl: mediaUrl,
+            lyrics: `Track: "${(item.title || item.song || '').replace(/&quot;/g, '"')}"\n\n(Find full licensed lyrics on Google Search)`
+          };
+        }).filter(t => t.audioUrl);
 
-            return {
-              id: `track-${item.id || idx}-${Date.now()}`,
-              title: (item.name || item.title || "Track").replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&'),
-              artist: item.artists?.primary?.map(a => a.name).join(", ") || item.primaryArtists || "Aura Artist",
-              cover: img?.url || img?.link || STARTER_TRACKS[0].cover,
-              audioUrl: stream,
-              lyrics: `Track: "${(item.name || item.title || '').replace(/&quot;/g, '"')}"\nArtist: ${item.primaryArtists || 'Artist'}\n\nFull-Length Master Track Streaming on Aura.`
-            };
-          }).filter(t => t.audioUrl);
-
-          if (found.length > 0) break;
+        if (formatted.length > 0) {
+          setSearchResults(formatted);
+        } else {
+          setSearchFeedback("Track URL decrypt nahi hua. Dusra keyword try karein!");
         }
-      } catch (err) {
-        console.warn("Retrying next mirror...", err);
+      } else {
+        setSearchFeedback("Koi track nahi mila. Dusra song search karein!");
       }
-    }
+      setLoading(false);
+    };
 
-    if (found.length > 0) {
-      setSearchResults(found);
-    } else {
-      setSearchFeedback("Track direct play ke liye available nahi hua. Dusra keyword type karein!");
-    }
-    setLoading(false);
+    script.src = `https://c.saavn.com/api.php?__call=autocomplete.get&query=${encodeURIComponent(term.trim())}&_format=json&_marker=0&ctx=web6dot0&callback=${callbackName}`;
+    document.body.appendChild(script);
   };
 
   const playSong = (track, list) => {
@@ -198,7 +202,7 @@ export default function App() {
       display: "flex", flexDirection: "column", height: "100vh", width: "100vw",
       background: "#08090d", color: "#f1f3f5", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden", position: "relative"
     }}>
-      {/* Ambient Moody Drift Background Animation */}
+      {/* Ambient Moody Drift Animation */}
       <style>{`
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { display: none; }
@@ -307,7 +311,7 @@ export default function App() {
             <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Any Song</h2>
             <form onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }} style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fff", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px" }}>
               <Search size={18} color="#08090d" />
-              <input type="text" placeholder="Khuda Jaane, Bojhena Shey Bojhena, Starboy..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
+              <input type="text" placeholder="Falak Tak Chal, Khuda Jaane, Starboy..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
               {loading ? <Loader2 size={18} className="animate-spin" color="#08090d" /> : (
                 <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Go</button>
               )}
@@ -402,7 +406,7 @@ export default function App() {
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0" }}>
             {showLyrics ? (
               <div style={{ width: "100%", height: "280px", background: "rgba(0,0,0,0.3)", borderRadius: "16px", padding: "20px", overflowY: "auto", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Live Lyrics & Info</h4>
+                <h4 style={{ margin: "0 0 12px 0", color: "#00f2fe" }}>Live Track Info</h4>
                 <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#e4e4e9" }}>{currentTrack.lyrics || "No lyrics available."}</p>
               </div>
             ) : (
