@@ -22,7 +22,6 @@ import { searchYouTube } from "@/services/youtubeApi";
 import { storageService } from "@/services/storageService";
 import { CATALOG_SEED } from "@/data/catalogSeed";
 
-import { CATALOG_SEED } from "./data/catalogSeed";
 
 export default function App() {
   const [theme, setTheme] = useState("dark");
