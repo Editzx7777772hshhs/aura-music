@@ -2,26 +2,33 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Sparkles, Search, Heart,
   Play, Pause, SkipBack, SkipForward,
-  Loader2, AlignLeft, ChevronDown, Home, FolderHeart,
-  Volume2, VolumeX
+  Loader2, AlignLeft, ChevronDown, Home, FolderHeart
 } from "lucide-react";
 
-// Safe starters with dynamic backup
+// Curated full-length tracks
 const DEFAULT_TRACKS = [
   {
     id: "init-1",
-    title: "Zaalima",
-    artist: "Arijit Singh, Harshdeep Kaur",
-    cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80",
-    audioUrl: "https://aac.saavncdn.com/264/3d02cf65e7164cfcae9cba35fce5a3f2_160.mp4",
-    lyrics: "Jo teri khatir tadpe pehle se hi\nKya use tadpana, o zaalima..."
+    title: "Starboy (Synthwave Remix)",
+    artist: "The Weeknd",
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
+    audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/starboy_electronic.mp3",
+    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah..."
   },
   {
     id: "init-2",
-    title: "Khamoshiyan",
+    title: "Blinding Lights (Club Edition)",
+    artist: "The Weeknd",
+    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80",
+    audioUrl: "https://ia801503.us.archive.org/15/items/audio-sample-archive/blinding_lights_remix.mp3",
+    lyrics: "Yeah\nI've been tryin' to call\nI've been on my own for long enough..."
+  },
+  {
+    id: "init-3",
+    title: "Khamoshiyan (Acoustic Chill)",
     artist: "Arijit Singh",
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
-    audioUrl: "https://aac.saavncdn.com/191/9f7e5b10b0d367468165b4c489cf3046_160.mp4",
+    cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80",
+    audioUrl: "https://ia800501.us.archive.org/11/items/hindi-melodies-acoustic/khamoshiyan_acoustic.mp3",
     lyrics: "Khamoshiyan aawaaz hain\nTum sun'ne toh aao kabhi..."
   }
 ];
@@ -48,8 +55,6 @@ export default function App() {
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
 
   const audioRef = useRef(null);
   const isScrubbing = useRef(false);
@@ -59,67 +64,42 @@ export default function App() {
     localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
   }, [liked]);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
-
-  // Full-Length Multi-API Resolver
+  // Audius Full-Length Direct Stream Resolver
   const searchOnline = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     setSearchFeedback("");
 
-    const encoded = encodeURIComponent(term.trim());
-    const endpoints = [
-      `https://saavn.dev/api/search/songs?query=${encoded}&limit=30`,
-      `https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${encoded}&limit=30`,
-      `https://saavn.me/search/songs?query=${encoded}&limit=30`
-    ];
+    try {
+      const query = encodeURIComponent(term.trim());
+      const res = await fetch(`https://discoveryprovider.audius.co/v1/tracks/search?query=${query}&app_name=AURA_MUSIC`);
+      const data = await res.json();
 
-    let foundTracks = [];
+      if (data?.data && data.data.length > 0) {
+        const fullStreams = data.data
+          .filter(item => item.id && !item.is_unlisted)
+          .map((item) => ({
+            id: `audius-${item.id}`,
+            title: item.title,
+            artist: item.user?.name || "Aura Artist",
+            cover: item.artwork?.["480x480"] || item.artwork?.["150x150"] || DEFAULT_TRACKS[0].cover,
+            audioUrl: `https://discoveryprovider.audius.co/v1/tracks/${item.id}/stream?app_name=AURA_MUSIC`,
+            lyrics: `Track: "${item.title}"\nArtist: ${item.user?.name}\n\nStreaming high quality lossless audio on Aura Engine.`
+          }));
 
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const rawList = data?.data?.results || data?.results || [];
-
-        if (rawList.length > 0) {
-          foundTracks = rawList.map((item, idx) => {
-            const download = item.downloadUrl?.find(d => d.quality === "320kbps") ||
-                             item.downloadUrl?.find(d => d.quality === "160kbps") ||
-                             (Array.isArray(item.downloadUrl) ? item.downloadUrl[item.downloadUrl.length - 1] : null);
-
-            const img = item.image?.find(i => i.quality === "500x500") ||
-                        (Array.isArray(item.image) ? item.image[item.image.length - 1] : null);
-
-            const streamUrl = download?.url || download?.link || (typeof item.downloadUrl === "string" ? item.downloadUrl : "");
-
-            return {
-              id: `track-${item.id || idx}-${Date.now()}`,
-              title: (item.name || item.title || "Unknown").replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&'),
-              artist: item.artists?.primary?.map(a => a.name).join(", ") || item.primaryArtists || "Aura Artist",
-              cover: img?.url || img?.link || DEFAULT_TRACKS[0].cover,
-              audioUrl: streamUrl,
-              lyrics: `Streaming full track for "${(item.name || item.title || '').replace(/&quot;/g, '"')}"\n\nHigh-definition lossless audio streaming on Aura Music Engine.`
-            };
-          }).filter(t => t.audioUrl);
-
-          if (foundTracks.length > 0) break;
+        if (fullStreams.length > 0) {
+          setSearchResults(fullStreams);
+          setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.warn("Retrying next endpoint...", err);
       }
+      setSearchFeedback("No matches found. Try another song or artist name!");
+    } catch (err) {
+      console.error(err);
+      setSearchFeedback("Connection timeout. Please retry search!");
+    } finally {
+      setLoading(false);
     }
-
-    if (foundTracks.length > 0) {
-      setSearchResults(foundTracks);
-    } else {
-      setSearchFeedback("No full stream available for this query. Try another keyword!");
-    }
-    setLoading(false);
   };
 
   const playSong = (track, list) => {
@@ -211,8 +191,6 @@ export default function App() {
         .aura-orb.one { top: -100px; left: -100px; background: #00f2fe; }
         .aura-orb.two { top: 25%; right: -120px; background: #7928ca; animation-delay: -3s; }
         @keyframes auraFloat { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(35px, -25px, 0) scale(1.15); } }
-        @keyframes eqWave { 0%, 100% { height: 4px; } 50% { height: 16px; } }
-        .eq-anim { animation: eqWave 0.8s ease-in-out infinite; }
         input[type="range"] { -webkit-appearance: none; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.18); outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #00f2fe; cursor: pointer; }
       `}</style>
@@ -256,7 +234,7 @@ export default function App() {
             <div style={{ margin: "6px 0 20px", padding: "24px 20px", borderRadius: "20px", background: "linear-gradient(135deg, rgba(0,242,254,0.14), rgba(121,40,202,0.14))", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
               <div style={{ fontSize: "11px", color: "#00f2fe", fontWeight: 800, letterSpacing: "2px", marginBottom: "6px" }}>AURA MUSIC STUDIO</div>
               <h1 style={{ margin: 0, fontSize: "26px", lineHeight: 1.1, fontWeight: 900 }}>Your sound.<br />Your atmosphere.</h1>
-              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Search any artist or song for full length streams.</p>
+              <p style={{ margin: "10px 0 0", color: "#8b949e", fontSize: "13px" }}>Direct full-length cloud music streaming.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" }}>
@@ -268,7 +246,7 @@ export default function App() {
               ))}
             </div>
 
-            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Trending</h3>
+            <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "0 0 12px 0" }}>Start listening</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {DEFAULT_TRACKS.map(track => {
                 const isCurrent = currentTrack?.id === track.id;
@@ -296,7 +274,7 @@ export default function App() {
             <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "10px 0 14px 0" }}>Search Any Song</h2>
             <form onSubmit={(e) => { e.preventDefault(); searchOnline(searchQuery); }} style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fff", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px" }}>
               <Search size={18} color="#08090d" />
-              <input type="text" placeholder="Type song or artist name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
+              <input type="text" placeholder="Search The Weeknd, EDM, Hindi, Lofi..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, border: "none", outline: "none", color: "#08090d", fontSize: "14px", fontWeight: 600, background: "transparent" }} />
               {loading ? <Loader2 size={18} className="animate-spin" color="#08090d" /> : (
                 <button type="submit" style={{ background: "#08090d", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Go</button>
               )}
@@ -311,7 +289,7 @@ export default function App() {
                   <div key={track.id} onClick={() => playSong(track, searchResults.length > 0 ? searchResults : DEFAULT_TRACKS)} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "8px", background: isCurrent ? "rgba(0,242,254,0.08)" : "rgba(255,255,255,0.03)", cursor: "pointer" }}>
                     <img src={track.cover} alt={track.title} style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "cover" }} />
                     <div style={{ flex: 1, overflow: "hidden" }}>
-                      <div style={{ fontSize: "14px", fontWeight: 700, color: isCurrent ? "#00f2fe" : "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
                       <div style={{ fontSize: "12px", color: "#8b949e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
                     </div>
                     <Play size={18} fill="#00f2fe" color="#00f2fe" />
@@ -376,14 +354,14 @@ export default function App() {
         })}
       </nav>
 
-      {/* Full Player Modal */}
+      {/* Fullscreen Player */}
       {fullPlayerOpen && (
         <div style={{ position: "fixed", inset: 0, background: "linear-gradient(180deg, #182334 0%, #08090d 100%)", zIndex: 999, display: "flex", flexDirection: "column", padding: "24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <button onClick={() => setFullPlayerOpen(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><ChevronDown size={28} /></button>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", color: "#8b949e", textTransform: "uppercase" }}>Playing Full Stream</div>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Lossless 320kbps</div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>Lossless Audio</div>
             </div>
             <button onClick={() => setShowLyrics(!showLyrics)} style={{ background: "none", border: "none", color: showLyrics ? "#00f2fe" : "#8b949e", cursor: "pointer" }}><AlignLeft size={20} /></button>
           </div>
