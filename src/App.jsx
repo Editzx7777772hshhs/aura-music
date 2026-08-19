@@ -1,18 +1,18 @@
-import Sidebar from "./components/layout/Sidebar.jsx";
-import Topbar from "./components/layout/Topbar.jsx";
-import MobileNav from "./components/layout/MobileNav.jsx";
-import Toasts from "./components/layout/Toasts.jsx";
-import PlayerBar from "./components/player/PlayerBar.jsx";
-import QueueDrawer from "./components/player/QueueDrawer.jsx";
-import AddToPlaylistModal from "./components/modals/AddToPlaylistModal.jsx";
+import Sidebar from "./components/layout/Sidebar";
+import Topbar from "./components/layout/Topbar";
+import MobileNav from "./components/layout/MobileNav";
+import Toasts from "./components/layout/Toasts";
+import PlayerBar from "./components/player/PlayerBar";
+import QueueDrawer from "./components/player/QueueDrawer";
+import AddToPlaylistModal from "./components/modals/AddToPlaylistModal";
 
-import HomePage from "./pages/HomePage.jsx";
-import DiscoverPage from "./pages/DiscoverPage.jsx";
-import SearchPage from "./pages/SearchPage.jsx";
-import PlaylistsPage from "./pages/PlaylistsPage.jsx";
-import PlaylistDetail from "./pages/PlaylistDetail.jsx";
-import TrackListPage from "./pages/TrackListPage.jsx";
-import SettingsPage from "./pages/SettingsPage.jsx";
+import HomePage from "./pages/HomePage";
+import DiscoverPage from "./pages/DiscoverPage";
+import SearchPage from "./pages/SearchPage";
+import PlaylistsPage from "./pages/PlaylistsPage";
+import PlaylistDetail from "./pages/PlaylistDetail";
+import TrackListPage from "./pages/TrackListPage";
+import SettingsPage from "./pages/SettingsPage";
 
 import { useYouTubePlayer } from "./hooks/useYouTubePlayer";
 import { searchYouTube } from "./services/youtubeApi";
