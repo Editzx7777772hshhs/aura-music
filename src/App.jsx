@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, SkipBack, SkipForward, Heart, Search,
-  Plus, ChevronDown, AlignLeft, Loader2
+  Plus, ChevronDown, AlignLeft, Loader2, Sparkles, Radio
 } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("artists");
+  const [activeTab, setActiveTab] = useState("discover");
   const [queue, setQueue] = useState([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,9 +21,9 @@ export default function App() {
 
   const [playlists, setPlaylists] = useState(() => {
     try {
-      const saved = localStorage.getItem("aura_playlists");
-      return saved ? JSON.parse(saved) : { "Heavy Rotation": [] };
-    } catch { return { "Heavy Rotation": [] }; }
+      const s = localStorage.getItem("aura_playlists");
+      return s ? JSON.parse(s) : { "Online Favorites": [] };
+    } catch { return { "Online Favorites": [] }; }
   });
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -47,13 +47,13 @@ export default function App() {
     localStorage.setItem("aura_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // System MediaSession Controls (Notification Drawer + Lock Screen)
+  // System Media Controls (Notification Drawer + Lock Screen)
   useEffect(() => {
     if ("mediaSession" in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: currentTrack.title,
         artist: currentTrack.artist,
-        album: "Aura Universal Player",
+        album: currentTrack.album || "Aura Online Cloud",
         artwork: [{ src: currentTrack.cover, sizes: "512x512", type: "image/jpeg" }]
       });
 
@@ -74,38 +74,49 @@ export default function App() {
     }
   }, [currentTrack, queueIndex]);
 
-  // Search using Serverless API Proxy
-  const searchMusic = async (term) => {
+  // Pure Online Global Cloud Resolver (Jamendo HD Free Streaming Network)
+  const searchOnlineMusic = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     setStatusMsg("");
+    setSearchResults([]);
 
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(term.trim())}`);
+      const q = encodeURIComponent(term.trim());
+      const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=843847f1&format=jsonpretty&limit=25&namesearch=${q}&audioformat=mp32&include=musicinfo`);
       const data = await res.json();
 
-      if (data.results && data.results.length > 0) {
-        setSearchResults(data.results);
-        if (queue.length === 0) {
-          setQueue(data.results);
-        }
+      if (data?.results && data.results.length > 0) {
+        const parsed = data.results.map((item, idx) => ({
+          id: `cloud-${item.id}`,
+          title: item.name,
+          artist: item.artist_name,
+          album: item.album_name || "Cloud Master",
+          cover: item.image || item.album_image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
+          audioUrl: item.audio, // 100% Guaranteed Online Streamable MP3
+          durationStr: `${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`,
+          theme: ["#fed000", "#e63946", "#9ef01a", "#00f2fe", "#f72585"][idx % 5],
+          lyrics: `Online Cloud Stream: "${item.name}"\nArtist: ${item.artist_name}\nAlbum: ${item.album_name || 'Single'}\n\nHigh Bitrate Stream Live via Aura Cloud.`
+        })).filter(t => t.audioUrl);
+
+        setSearchResults(parsed);
+        if (queue.length === 0) setQueue(parsed);
       } else {
-        setStatusMsg("Koi track nahi mila. Doosra title try karein.");
+        setStatusMsg("Koi live online track nahi mila. Dusra keyword try karein!");
       }
     } catch (err) {
-      setStatusMsg("Backend connecting issue. Please try again.");
+      setStatusMsg("Cloud connection timeout. Please retry.");
     }
     setLoading(false);
   };
 
-  // Initial Load with trending tracks
+  // Initial Online Trending Feed on load
   useEffect(() => {
-    searchMusic("Arijit Singh Pritam hits");
+    searchOnlineMusic("acoustic pop");
   }, []);
 
   const playSong = (track, list) => {
     if (!track?.audioUrl) return;
-    setStatusMsg("");
     const activeList = list && list.length > 0 ? list : searchResults;
     setQueue(activeList);
     const targetIdx = activeList.findIndex((t) => t.id === track.id);
@@ -115,10 +126,7 @@ export default function App() {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch((err) => {
-        console.warn("Stream error:", err);
-        setIsPlaying(false);
-      });
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
@@ -208,15 +216,17 @@ export default function App() {
 
       {/* Main Screen */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 120px 16px" }}>
+        
+        {/* Navigation Tabs */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div style={{ display: "flex", gap: "16px", alignItems: "baseline" }}>
             <span
-              onClick={() => setActiveTab("artists")}
+              onClick={() => setActiveTab("discover")}
               style={{
                 fontSize: "34px",
                 fontWeight: 900,
                 letterSpacing: "-1.5px",
-                color: activeTab === "artists" ? "#08090d" : "rgba(8,9,13,0.35)",
+                color: activeTab === "discover" ? "#08090d" : "rgba(8,9,13,0.35)",
                 cursor: "pointer"
               }}>
               Discover
@@ -234,22 +244,16 @@ export default function App() {
             </span>
           </div>
 
-          <button
-            onClick={() => setActiveTab("search")}
-            style={{
-              width: "40px", height: "40px", borderRadius: "50%",
-              background: "#08090d", color: "#fff", border: "none",
-              display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer"
-            }}>
-            <Search size={18} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(0,0,0,0.08)", padding: "6px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: 800 }}>
+            <Radio size={12} color="#08090d" /> Cloud Online
+          </div>
         </div>
 
-        {/* Global Live Search Input */}
-        <form onSubmit={(e) => { e.preventDefault(); searchMusic(searchQuery); }} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+        {/* Live Search Input */}
+        <form onSubmit={(e) => { e.preventDefault(); searchOnlineMusic(searchQuery); }} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
           <input
             type="text"
-            placeholder="Search Despacito, Falak Tak, Karan Aujla..."
+            placeholder="Search online songs (rock, hiphop, love, chill, dance)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -270,8 +274,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Top Visual Cards */}
-        {activeTab === "artists" && searchResults.length > 0 && (
+        {/* Online Trending Visual Cards */}
+        {activeTab === "discover" && searchResults.length > 0 && (
           <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "14px", marginBottom: "14px" }}>
             {searchResults.slice(0, 6).map((item) => (
               <div
@@ -301,7 +305,7 @@ export default function App() {
         {activeTab === "playlists" && (
           <div style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 900 }}>Your Playlists</h3>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 900 }}>Your Online Playlists</h3>
               <button
                 onClick={() => setShowCreateModal(true)}
                 style={{ display: "flex", alignItems: "center", gap: "6px", background: "#08090d", color: "#fff", padding: "8px 14px", borderRadius: "10px", border: "none", fontWeight: 800, fontSize: "12px", cursor: "pointer" }}>
@@ -359,7 +363,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Real Live Results List */}
+        {/* Dynamic Online Track List */}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {searchResults.map((track) => {
             const isCurrent = currentTrack?.id === track.id;
