@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, SkipBack, SkipForward, Heart, Search,
-  Plus, ChevronDown, AlignLeft, Loader2, Sparkles
+  Plus, ChevronDown, AlignLeft, Loader2
 } from "lucide-react";
+
+// HTML entities ko clean text me decode karne ke liye helper
+const decodeHtml = (html) => {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html || "";
+  return txt.value;
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("discover");
@@ -47,13 +54,13 @@ export default function App() {
     localStorage.setItem("aura_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // System MediaSession Controls (Background + Lock Screen + Drawer)
+  // System MediaSession Controls (Background + Lock Screen)
   useEffect(() => {
     if ("mediaSession" in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: currentTrack.title,
         artist: currentTrack.artist,
-        album: "Aura Master Studio",
+        album: "Aura Music",
         artwork: [{ src: currentTrack.cover, sizes: "512x512", type: "image/jpeg" }]
       });
 
@@ -74,24 +81,57 @@ export default function App() {
     }
   }, [currentTrack, queueIndex]);
 
-  // Real Serverless Music Search
+  // Direct JioSaavn Search API Engine
   const searchMusic = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     setStatusMsg("");
-    setSearchResults([]);
 
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(term.trim())}`);
+      const res = await fetch(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(term.trim())}`);
       const data = await res.json();
 
-      if (data?.results && data.results.length > 0) {
-        setSearchResults(data.results);
-        if (queue.length === 0) setQueue(data.results);
+      if (data?.success && data?.data?.results?.length > 0) {
+        const parsedResults = data.data.results.map((song) => {
+          // Audio source quality fallback
+          const audioUrl = song.downloadUrl?.[4]?.url || 
+                           song.downloadUrl?.[3]?.url || 
+                           song.downloadUrl?.[2]?.url || 
+                           song.downloadUrl?.[0]?.url || "";
+          
+          // Image cover quality fallback
+          const cover = song.image?.[2]?.url || 
+                        song.image?.[1]?.url || 
+                        song.image?.[0]?.url || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500";
+
+          const artists = song.artists?.primary?.map((a) => a.name).join(", ") || "Unknown Artist";
+          const dSecs = Number(song.duration) || 0;
+          const mins = Math.floor(dSecs / 60);
+          const secs = Math.floor(dSecs % 60);
+
+          return {
+            id: song.id,
+            title: decodeHtml(song.name),
+            artist: decodeHtml(artists),
+            cover: cover,
+            audioUrl: audioUrl,
+            durationStr: `${mins}:${secs < 10 ? "0" : ""}${secs}`,
+            lyrics: "Lyrics available during stream.",
+            theme: "#fed000"
+          };
+        }).filter(item => item.audioUrl);
+
+        if (parsedResults.length > 0) {
+          setSearchResults(parsedResults);
+          if (queue.length === 0) setQueue(parsedResults);
+        } else {
+          setStatusMsg("Koi playable audio stream nahi mila.");
+        }
       } else {
         setStatusMsg("Koi track nahi mila. Doosra song title try karein.");
       }
     } catch (err) {
+      console.error(err);
       setStatusMsg("Connecting to audio engine... Please retry.");
     }
     setLoading(false);
@@ -99,7 +139,7 @@ export default function App() {
 
   // Initial trending feed on load
   useEffect(() => {
-    searchMusic("Arijit Singh Pritam songs");
+    searchMusic("Arijit Singh Pritam");
   }, []);
 
   const playSong = (track, list) => {
@@ -111,13 +151,14 @@ export default function App() {
     setQueueIndex(targetIdx !== -1 ? targetIdx : 0);
 
     if (audioRef.current) {
-      audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch((err) => {
-        console.warn("Playback stream warning:", err);
-        setIsPlaying(false);
-      });
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          console.warn("Playback warning:", err);
+          setIsPlaying(false);
+        });
     }
   };
 
