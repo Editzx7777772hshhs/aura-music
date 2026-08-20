@@ -1,3 +1,4 @@
+{
   "name": "aura-music",
   "private": true,
   "version": "0.0.0",
@@ -19,4 +20,3 @@
     "vite": "^5.4.21"
   }
 }
-
