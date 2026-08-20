@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, SkipBack, SkipForward, Heart, Search,
-  Plus, ChevronDown, AlignLeft, Loader2, Music2
+  Plus, ChevronDown, AlignLeft, Loader2
 } from "lucide-react";
 
 const decodeHtml = (html) => {
@@ -53,7 +53,7 @@ export default function App() {
     localStorage.setItem("aura_spotify_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // System Media Controls (Background & Notification Bar)
+  // Lockscreen & Notification Controls
   useEffect(() => {
     if ("mediaSession" in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -80,61 +80,47 @@ export default function App() {
     }
   }, [currentTrack, queueIndex]);
 
-  // Full-Length Songs JioSaavn Engine (No 30-sec limit)
+  // Full-Length HQ Audio Search Engine via Serverless Route
   const searchMusic = async (term) => {
     if (!term || !term.trim()) return;
     setLoading(true);
     setStatusMsg("");
 
     try {
-      const res = await fetch(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(term.trim())}&limit=30`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(term.trim())}`);
       const data = await res.json();
 
-      if (data?.success && data?.data?.results?.length > 0) {
-        const fullTracks = data.data.results.map((song) => {
-          const audioUrl = song.downloadUrl?.[4]?.url || 
-                           song.downloadUrl?.[3]?.url || 
-                           song.downloadUrl?.[2]?.url || 
-                           song.downloadUrl?.[0]?.url || "";
-
-          const cover = song.image?.[2]?.url || 
-                        song.image?.[1]?.url || 
-                        song.image?.[0]?.url || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500";
-
-          const artists = song.artists?.primary?.map((a) => a.name).join(", ") || "Unknown Artist";
+      if (data?.success && data?.results?.length > 0) {
+        const fullTracks = data.results.map((song) => {
           const dSecs = Number(song.duration) || 210;
           const mins = Math.floor(dSecs / 60);
           const secs = Math.floor(dSecs % 60);
 
           return {
             id: song.id,
-            title: decodeHtml(song.name),
-            artist: decodeHtml(artists),
-            cover: cover,
-            audioUrl: audioUrl,
+            title: decodeHtml(song.title),
+            artist: decodeHtml(song.artist),
+            cover: song.cover,
+            audioUrl: song.audioUrl,
             durationStr: `${mins}:${secs < 10 ? "0" : ""}${secs}`,
-            lyrics: "Streaming full-length lossless audio powered by Aura Master Engine."
+            lyrics: "Lossless Master 320kbps Audio on Aura."
           };
-        }).filter(item => item.audioUrl && item.audioUrl.startsWith("http"));
+        });
 
-        if (fullTracks.length > 0) {
-          setSearchResults(fullTracks);
-          if (queue.length === 0) setQueue(fullTracks);
-        } else {
-          setStatusMsg("Koi track nahi mila. Dusra song title search karein.");
-        }
+        setSearchResults(fullTracks);
+        if (queue.length === 0) setQueue(fullTracks);
       } else {
-        setStatusMsg("Koi track nahi mila. Dusra name try karein.");
+        setStatusMsg("Koi track nahi mila. Dusra name search karein.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setStatusMsg("Connection retry karein...");
     }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    searchMusic("Diljit Dosanjh Arijit Singh");
+    searchMusic("Arijit Singh Diljit Dosanjh");
   }, []);
 
   const playSong = (track, list) => {
@@ -233,10 +219,10 @@ export default function App() {
         preload="auto"
       />
 
-      {/* Main App Feed */}
+      {/* Main Feed */}
       <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 120px 16px" }}>
         
-        {/* Header with Spotify Accent */}
+        {/* Spotify Brand Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
           <div>
             <div style={{ fontSize: "11px", fontWeight: 800, color: "#1db954", letterSpacing: "2px" }}>
@@ -322,7 +308,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Spotify Horizontal Card Grid */}
+        {/* Top Cards Carousel */}
         {activeTab === "discover" && searchResults.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
             <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: 800 }}>Top Recommended</h3>
@@ -443,7 +429,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Spotify Track List */}
+        {/* Tracks List */}
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <h3 style={{ margin: "0 0 10px 0", fontSize: "18px", fontWeight: 800 }}>Popular Tracks</h3>
           {searchResults.map((track) => {
@@ -573,7 +559,7 @@ export default function App() {
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {showLyrics ? (
               <div style={{ width: "100%", maxHeight: "320px", background: "#181818", borderRadius: "16px", padding: "24px", overflowY: "auto", border: "1px solid #282828" }}>
-                <h4 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: 800, color: "#1db954" }}>Lyrics & Info</h4>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: 800, color: "#1db954" }}>Lossless Audio</h4>
                 <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "15px", color: "#b3b3b3", fontWeight: 600 }}>{currentTrack.lyrics}</p>
               </div>
             ) : (
