@@ -4,7 +4,6 @@ import {
   Plus, ChevronDown, AlignLeft, Loader2
 } from "lucide-react";
 
-// HTML entities ko clean text me decode karne ke liye helper
 const decodeHtml = (html) => {
   const txt = document.createElement("textarea");
   txt.innerHTML = html || "";
@@ -54,7 +53,7 @@ export default function App() {
     localStorage.setItem("aura_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // System MediaSession Controls (Background + Lock Screen)
+  // Lockscreen & Background controls
   useEffect(() => {
     if ("mediaSession" in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -81,63 +80,78 @@ export default function App() {
     }
   }, [currentTrack, queueIndex]);
 
-  // Direct JioSaavn Search API Engine
+  // Robust Multi-Endpoint Music Search with CORS Fallback
   const searchMusic = async (term) => {
     if (!term.trim()) return;
     setLoading(true);
     setStatusMsg("");
 
-    try {
-      const res = await fetch(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(term.trim())}`);
-      const data = await res.json();
+    const encodedQuery = encodeURIComponent(term.trim());
+    const endpoints = [
+      `https://jiosaavn-api-privateindexer.vercel.app/search/songs?query=${encodedQuery}`,
+      `https://saavn.me/search/songs?query=${encodedQuery}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://saavn.dev/api/search/songs?query=${encodedQuery}`)}`
+    ];
 
-      if (data?.success && data?.data?.results?.length > 0) {
-        const parsedResults = data.data.results.map((song) => {
-          // Audio source quality fallback
-          const audioUrl = song.downloadUrl?.[4]?.url || 
-                           song.downloadUrl?.[3]?.url || 
-                           song.downloadUrl?.[2]?.url || 
-                           song.downloadUrl?.[0]?.url || "";
-          
-          // Image cover quality fallback
-          const cover = song.image?.[2]?.url || 
-                        song.image?.[1]?.url || 
-                        song.image?.[0]?.url || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500";
+    let foundTracks = [];
 
-          const artists = song.artists?.primary?.map((a) => a.name).join(", ") || "Unknown Artist";
-          const dSecs = Number(song.duration) || 0;
-          const mins = Math.floor(dSecs / 60);
-          const secs = Math.floor(dSecs % 60);
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
 
-          return {
-            id: song.id,
-            title: decodeHtml(song.name),
-            artist: decodeHtml(artists),
-            cover: cover,
-            audioUrl: audioUrl,
-            durationStr: `${mins}:${secs < 10 ? "0" : ""}${secs}`,
-            lyrics: "Lyrics available during stream.",
-            theme: "#fed000"
-          };
-        }).filter(item => item.audioUrl);
+        const results = data?.data?.results || data?.data || data?.results || [];
+        if (Array.isArray(results) && results.length > 0) {
+          foundTracks = results.map((song) => {
+            const audioUrl = song.downloadUrl?.[4]?.url || 
+                             song.downloadUrl?.[3]?.url || 
+                             song.downloadUrl?.[2]?.url || 
+                             song.downloadUrl?.[0]?.url || 
+                             (typeof song.downloadUrl === 'string' ? song.downloadUrl : song.media_url) || "";
+            
+            const cover = song.image?.[2]?.url || 
+                          song.image?.[1]?.url || 
+                          song.image?.[0]?.url || 
+                          (typeof song.image === 'string' ? song.image : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500");
 
-        if (parsedResults.length > 0) {
-          setSearchResults(parsedResults);
-          if (queue.length === 0) setQueue(parsedResults);
-        } else {
-          setStatusMsg("Koi playable audio stream nahi mila.");
+            const artistName = Array.isArray(song.artists?.primary)
+              ? song.artists.primary.map(a => a.name).join(", ")
+              : (song.primaryArtists || song.artist || "Aura Artist");
+
+            const dSecs = Number(song.duration) || 210;
+            const mins = Math.floor(dSecs / 60);
+            const secs = Math.floor(dSecs % 60);
+
+            return {
+              id: song.id || String(Math.random()),
+              title: decodeHtml(song.name || song.title || "Track"),
+              artist: decodeHtml(artistName),
+              cover: cover,
+              audioUrl: audioUrl,
+              durationStr: `${mins}:${secs < 10 ? "0" : ""}${secs}`,
+              lyrics: "Enjoy the rhythm on Aura Music ✨",
+              theme: "#fed000"
+            };
+          }).filter(item => item.audioUrl && item.audioUrl.startsWith("http"));
+
+          if (foundTracks.length > 0) break;
         }
-      } else {
-        setStatusMsg("Koi track nahi mila. Doosra song title try karein.");
+      } catch {
+        continue;
       }
-    } catch (err) {
-      console.error(err);
-      setStatusMsg("Connecting to audio engine... Please retry.");
     }
+
+    if (foundTracks.length > 0) {
+      setSearchResults(foundTracks);
+      if (queue.length === 0) setQueue(foundTracks);
+    } else {
+      setStatusMsg("Koi track nahi mila. Dusra song name type karein.");
+    }
+
     setLoading(false);
   };
 
-  // Initial trending feed on load
   useEffect(() => {
     searchMusic("Arijit Singh Pritam");
   }, []);
@@ -155,10 +169,7 @@ export default function App() {
       audioRef.current.load();
       audioRef.current.play()
         .then(() => setIsPlaying(true))
-        .catch((err) => {
-          console.warn("Playback warning:", err);
-          setIsPlaying(false);
-        });
+        .catch(() => setIsPlaying(false));
     }
   };
 
@@ -246,10 +257,10 @@ export default function App() {
         preload="auto"
       />
 
-      {/* Main Screen Content */}
+      {/* Main Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 120px 16px" }}>
         
-        {/* Navigation Tabs */}
+        {/* Header Tabs */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div style={{ display: "flex", gap: "16px", alignItems: "baseline" }}>
             <span
@@ -287,7 +298,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* Global Live Search Bar */}
+        {/* Search Field */}
         <form onSubmit={(e) => { e.preventDefault(); searchMusic(searchQuery); }} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
           <input
             type="text"
@@ -312,7 +323,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Visual Cards Row */}
+        {/* Carousel */}
         {activeTab === "discover" && searchResults.length > 0 && (
           <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "14px", marginBottom: "14px" }}>
             {searchResults.slice(0, 6).map((item) => (
@@ -339,7 +350,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Playlists View */}
+        {/* Playlists */}
         {activeTab === "playlists" && (
           <div style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
@@ -401,7 +412,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Dynamic Track Results List */}
+        {/* Songs List */}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {searchResults.map((track) => {
             const isCurrent = currentTrack?.id === track.id;
@@ -450,7 +461,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Floating Monochromatic Mini-Player */}
+      {/* Mini Player */}
       {currentTrack && (
         <div
           onClick={() => setFullPlayerOpen(true)}
@@ -492,7 +503,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Full Editorial Monochromatic Vinyl Player Screen */}
+      {/* Full Vinyl Player */}
       {fullPlayerOpen && currentTrack && (
         <div
           style={{
