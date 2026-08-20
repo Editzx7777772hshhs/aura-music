@@ -1,114 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, SkipBack, SkipForward, Heart, Search,
-  Plus, ChevronDown, AlignLeft, HardDrive, Sparkles, Disc3
+  Plus, ChevronDown, AlignLeft, Loader2
 } from "lucide-react";
-
-// Robust Full-Length Offline + Online Catalog
-const MASTER_CATALOG = [
-  {
-    id: "tr-1",
-    title: "Falak Tak Chal",
-    artist: "Udit Narayan, Mahalaxmi",
-    category: "bollywood",
-    durationStr: "05:56",
-    theme: "#e63946",
-    cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
-    lyrics: "Falak tak chal saath mere\nFalak tak chal saath chal...\nYeh baadal ki chaadar pe\nAao soyein hum dono."
-  },
-  {
-    id: "tr-2",
-    title: "Despacito (Latin Global)",
-    artist: "Luis Fonsi, Daddy Yankee",
-    category: "global",
-    durationStr: "03:48",
-    theme: "#fed000",
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3",
-    lyrics: "Despacito...\nQuiero respirar tu cuello despacito\nDeja que te diga cosas al oído\nPara que te acuerdes si no estás conmigo."
-  },
-  {
-    id: "tr-3",
-    title: "Starboy",
-    artist: "The Weeknd ft. Daft Punk",
-    category: "global",
-    durationStr: "03:50",
-    theme: "#ff0055",
-    cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3",
-    lyrics: "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah\nMilli point two just to hurt you, ah..."
-  },
-  {
-    id: "tr-4",
-    title: "Khuda Jaane",
-    artist: "KK, Shilpa Rao",
-    category: "bollywood",
-    durationStr: "05:32",
-    theme: "#9ef01a",
-    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3",
-    lyrics: "Sajde mein yun hi jhukta hoon\nTum pe hi aa ke rukta hoon\nKya yeh sab ko hota hai..."
-  },
-  {
-    id: "tr-5",
-    title: "Lover (Punjabi Hit)",
-    artist: "Diljit Dosanjh",
-    category: "punjabi",
-    durationStr: "03:15",
-    theme: "#00f2fe",
-    cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3",
-    lyrics: "Tera ni mai lover, tera ni mai lover...\nJadon da tenu takya, dil te chhaya fitoor."
-  },
-  {
-    id: "tr-6",
-    title: "Kohinoor (Gully Rap)",
-    artist: "DIVINE",
-    category: "hiphop",
-    durationStr: "03:22",
-    theme: "#f72585",
-    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3504a919e.mp3",
-    lyrics: "Gully Gang boy!\nKohinoor heera jaise chamke meri kalam..."
-  },
-  {
-    id: "tr-7",
-    title: "Kesariya (Acoustic Master)",
-    artist: "Arijit Singh, Pritam",
-    category: "bollywood",
-    durationStr: "04:28",
-    theme: "#fed000",
-    cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/11/06/audio_c931448b4d.mp3",
-    lyrics: "Kesariya tera ishq hai piya\nRang jaaun jo main haath lagaun\nDin beete saara teri fikr mein\nRain saari teri khair manaun..."
-  },
-  {
-    id: "tr-8",
-    title: "Midnight City Lights",
-    artist: "Synthwave Pulse",
-    category: "global",
-    durationStr: "03:40",
-    theme: "#7928ca",
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
-    audioUrl: "https://cdn.pixabay.com/download/audio/2021/08/08/audio_dc39bde808.mp3",
-    lyrics: "Neon glows over the skyline...\nDriving into the boundless midnight."
-  }
-];
-
-const GENRE_TABS = [
-  { id: "foryou", label: "For you", count: "219" },
-  { id: "bollywood", label: "Bollywood", count: "589" },
-  { id: "punjabi", label: "Punjabi", count: "340" },
-  { id: "hiphop", label: "Hip-hop", count: "312" },
-  { id: "global", label: "Global", count: "719" }
-];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("artists");
-  const [selectedGenre, setSelectedGenre] = useState("foryou");
-  const [feedTracks, setFeedTracks] = useState(MASTER_CATALOG);
-  const [queue, setQueue] = useState(MASTER_CATALOG);
+  const [queue, setQueue] = useState([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -119,12 +17,13 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
 
   const [playlists, setPlaylists] = useState(() => {
     try {
       const saved = localStorage.getItem("aura_playlists");
-      return saved ? JSON.parse(saved) : { "Heavy Rotation": ["tr-1", "tr-2"] };
-    } catch { return { "Heavy Rotation": ["tr-1", "tr-2"] }; }
+      return saved ? JSON.parse(saved) : { "Heavy Rotation": [] };
+    } catch { return { "Heavy Rotation": [] }; }
   });
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -132,14 +31,13 @@ export default function App() {
   const [liked, setLiked] = useState(() => {
     try {
       const s = localStorage.getItem("aura_liked");
-      return s ? new Set(JSON.parse(s)) : new Set(["tr-1", "tr-2"]);
-    } catch { return new Set(["tr-1"]); }
+      return s ? new Set(JSON.parse(s)) : new Set();
+    } catch { return new Set(); }
   });
 
   const audioRef = useRef(null);
-  const fileInputRef = useRef(null);
   const isScrubbing = useRef(false);
-  const currentTrack = queue[queueIndex] || MASTER_CATALOG[0];
+  const currentTrack = queue[queueIndex] || null;
 
   useEffect(() => {
     localStorage.setItem("aura_liked", JSON.stringify(Array.from(liked)));
@@ -149,13 +47,13 @@ export default function App() {
     localStorage.setItem("aura_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // System Media Controls (Notification Drawer + Lock Screen)
+  // System MediaSession Controls (Notification Drawer + Lock Screen)
   useEffect(() => {
     if ("mediaSession" in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: currentTrack.title,
         artist: currentTrack.artist,
-        album: "Aura Master Studio",
+        album: "Aura Universal Player",
         artwork: [{ src: currentTrack.cover, sizes: "512x512", type: "image/jpeg" }]
       });
 
@@ -176,67 +74,51 @@ export default function App() {
     }
   }, [currentTrack, queueIndex]);
 
-  // Genre filter switch
-  const handleGenreClick = (genreId) => {
-    setSelectedGenre(genreId);
-    if (genreId === "foryou") {
-      setFeedTracks(MASTER_CATALOG);
-    } else {
-      const filtered = MASTER_CATALOG.filter(t => t.category === genreId);
-      setFeedTracks(filtered.length > 0 ? filtered : MASTER_CATALOG);
-    }
-  };
-
-  // Hybrid Fast Search Engine (Jamendo Direct + Catalog Match)
-  const handleSearchSubmit = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  // Search using Serverless API Proxy
+  const searchMusic = async (term) => {
+    if (!term.trim()) return;
     setLoading(true);
+    setStatusMsg("");
 
-    const term = searchQuery.toLowerCase().trim();
-    // 1. Direct Catalog Match
-    const localMatches = MASTER_CATALOG.filter(
-      t => t.title.toLowerCase().includes(term) || t.artist.toLowerCase().includes(term)
-    );
-
-    // 2. Jamendo Global HD Search
-    let remoteMatches = [];
     try {
-      const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=843847f1&format=jsonpretty&limit=15&namesearch=${encodeURIComponent(term)}&audioformat=mp32`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(term.trim())}`);
       const data = await res.json();
-      if (data?.results?.length > 0) {
-        remoteMatches = data.results.map((item, idx) => ({
-          id: `jam-${item.id}`,
-          title: item.name,
-          artist: item.artist_name,
-          durationStr: `${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`,
-          theme: ["#e63946", "#fed000", "#9ef01a", "#00f2fe", "#f72585"][idx % 5],
-          cover: item.image || MASTER_CATALOG[0].cover,
-          audioUrl: item.audio,
-          lyrics: `Track: "${item.name}"\nArtist: ${item.artist_name}\nAlbum: ${item.album_name || 'Single'}\n\nFull uncompressed HD stream on Aura Engine.`
-        })).filter(t => t.audioUrl);
+
+      if (data.results && data.results.length > 0) {
+        setSearchResults(data.results);
+        if (queue.length === 0) {
+          setQueue(data.results);
+        }
+      } else {
+        setStatusMsg("Koi track nahi mila. Doosra title try karein.");
       }
     } catch (err) {
-      console.warn("Remote search timeout, fallback to catalog matches.");
+      setStatusMsg("Backend connecting issue. Please try again.");
     }
-
-    const combined = [...localMatches, ...remoteMatches];
-    setSearchResults(combined.length > 0 ? combined : MASTER_CATALOG);
     setLoading(false);
   };
 
+  // Initial Load with trending tracks
+  useEffect(() => {
+    searchMusic("Arijit Singh Pritam hits");
+  }, []);
+
   const playSong = (track, list) => {
     if (!track?.audioUrl) return;
-    const activeList = list && list.length > 0 ? list : feedTracks;
+    setStatusMsg("");
+    const activeList = list && list.length > 0 ? list : searchResults;
     setQueue(activeList);
-    const targetIdx = activeList.findIndex(t => t.id === track.id);
+    const targetIdx = activeList.findIndex((t) => t.id === track.id);
     setQueueIndex(targetIdx !== -1 ? targetIdx : 0);
 
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = track.audioUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      audioRef.current.play().then(() => setIsPlaying(true)).catch((err) => {
+        console.warn("Stream error:", err);
+        setIsPlaying(false);
+      });
     }
   };
 
@@ -324,10 +206,8 @@ export default function App() {
         preload="auto"
       />
 
-      {/* Main Container */}
+      {/* Main Screen */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 120px 16px" }}>
-        
-        {/* Header Tabs */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div style={{ display: "flex", gap: "16px", alignItems: "baseline" }}>
             <span
@@ -339,7 +219,7 @@ export default function App() {
                 color: activeTab === "artists" ? "#08090d" : "rgba(8,9,13,0.35)",
                 cursor: "pointer"
               }}>
-              Artists
+              Discover
             </span>
             <span
               onClick={() => setActiveTab("playlists")}
@@ -355,7 +235,7 @@ export default function App() {
           </div>
 
           <button
-            onClick={() => setActiveTab(activeTab === "search" ? "artists" : "search")}
+            onClick={() => setActiveTab("search")}
             style={{
               width: "40px", height: "40px", borderRadius: "50%",
               background: "#08090d", color: "#fff", border: "none",
@@ -365,77 +245,59 @@ export default function App() {
           </button>
         </div>
 
-        {/* Search Bar Drawer */}
-        {activeTab === "search" && (
-          <div style={{ marginBottom: "16px" }}>
-            <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: "8px" }}>
-              <input
-                type="text"
-                placeholder="Search Falak Tak, Despacito, Arijit..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  flex: 1, padding: "12px 16px", borderRadius: "12px", border: "2px solid #08090d",
-                  fontSize: "14px", fontWeight: 700, outline: "none", background: "#fff"
-                }}
-              />
-              <button
-                type="submit"
-                style={{ padding: "0 18px", borderRadius: "12px", background: "#08090d", color: "#fff", border: "none", fontWeight: 800, cursor: "pointer" }}>
-                {loading ? "..." : "Go"}
-              </button>
-            </form>
+        {/* Global Live Search Input */}
+        <form onSubmit={(e) => { e.preventDefault(); searchMusic(searchQuery); }} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+          <input
+            type="text"
+            placeholder="Search Despacito, Falak Tak, Karan Aujla..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              flex: 1, padding: "12px 16px", borderRadius: "12px", border: "2px solid #08090d",
+              fontSize: "14px", fontWeight: 700, outline: "none", background: "#fff"
+            }}
+          />
+          <button
+            type="submit"
+            style={{ padding: "0 18px", borderRadius: "12px", background: "#08090d", color: "#fff", border: "none", fontWeight: 800, cursor: "pointer" }}>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : "Go"}
+          </button>
+        </form>
+
+        {statusMsg && (
+          <div style={{ padding: "10px", background: "rgba(0,0,0,0.06)", borderRadius: "8px", fontSize: "13px", fontWeight: 700, marginBottom: "12px" }}>
+            {statusMsg}
           </div>
         )}
 
-        {/* Top Artists Row */}
-        {activeTab === "artists" && (
-          <>
-            <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "14px", marginBottom: "14px" }}>
-              {feedTracks.slice(0, 5).map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => playSong(item, feedTracks)}
-                  style={{
-                    position: "relative",
-                    minWidth: "120px",
-                    height: "140px",
-                    borderRadius: "18px",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
-                    border: currentTrack?.id === item.id ? "3px solid #08090d" : "none"
-                  }}>
-                  <img src={item.cover} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%)" }} />
-                  <span style={{ position: "absolute", bottom: "8px", left: "8px", right: "8px", color: "#fff", fontSize: "12px", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {item.artist}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Micro Filter Pills */}
-            <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "12px", marginBottom: "12px" }}>
-              {GENRE_TABS.map((tab) => (
-                <span
-                  key={tab.id}
-                  onClick={() => handleGenreClick(tab.id)}
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    color: selectedGenre === tab.id ? "#08090d" : "rgba(8,9,13,0.4)"
-                  }}>
-                  {tab.label}<sup style={{ fontSize: "10px", fontWeight: 900, marginLeft: "2px" }}>{tab.count}</sup>
+        {/* Top Visual Cards */}
+        {activeTab === "artists" && searchResults.length > 0 && (
+          <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "14px", marginBottom: "14px" }}>
+            {searchResults.slice(0, 6).map((item) => (
+              <div
+                key={item.id}
+                onClick={() => playSong(item, searchResults)}
+                style={{
+                  position: "relative",
+                  minWidth: "120px",
+                  height: "140px",
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
+                  border: currentTrack?.id === item.id ? "3px solid #08090d" : "none"
+                }}>
+                <img src={item.cover} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%)" }} />
+                <span style={{ position: "absolute", bottom: "8px", left: "8px", right: "8px", color: "#fff", fontSize: "12px", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {item.artist}
                 </span>
-              ))}
-            </div>
-          </>
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Playlists Tab */}
+        {/* Playlists Management */}
         {activeTab === "playlists" && (
           <div style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
@@ -459,7 +321,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     if (!newPlaylistName.trim()) return;
-                    setPlaylists({ ...playlists, [newPlaylistName.trim()]: [currentTrack.id] });
+                    setPlaylists({ ...playlists, [newPlaylistName.trim()]: currentTrack ? [currentTrack.id] : [] });
                     setNewPlaylistName("");
                     setShowCreateModal(false);
                   }}
@@ -478,31 +340,33 @@ export default function App() {
                     <div style={{ fontSize: "15px", fontWeight: 900 }}>{pl}</div>
                     <div style={{ fontSize: "12px", opacity: 0.6, fontWeight: 700 }}>{playlists[pl].length} tracks stored</div>
                   </div>
-                  <button
-                    onClick={() => {
-                      const updated = { ...playlists };
-                      if (!updated[pl].includes(currentTrack.id)) {
-                        updated[pl].push(currentTrack.id);
-                        setPlaylists(updated);
-                      }
-                    }}
-                    style={{ background: "transparent", border: "1px solid #08090d", padding: "6px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: 800, cursor: "pointer" }}>
-                    + Add Current
-                  </button>
+                  {currentTrack && (
+                    <button
+                      onClick={() => {
+                        const updated = { ...playlists };
+                        if (!updated[pl].includes(currentTrack.id)) {
+                          updated[pl].push(currentTrack.id);
+                          setPlaylists(updated);
+                        }
+                      }}
+                      style={{ background: "transparent", border: "1px solid #08090d", padding: "6px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: 800, cursor: "pointer" }}>
+                      + Add Playing
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Track List */}
+        {/* Real Live Results List */}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {(activeTab === "search" && searchResults.length > 0 ? searchResults : feedTracks).map((track) => {
+          {searchResults.map((track) => {
             const isCurrent = currentTrack?.id === track.id;
             return (
               <div
                 key={track.id}
-                onClick={() => playSong(track, activeTab === "search" && searchResults.length > 0 ? searchResults : feedTracks)}
+                onClick={() => playSong(track, searchResults)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -525,7 +389,7 @@ export default function App() {
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ fontSize: "12px", fontWeight: 800, opacity: 0.6 }}>{track.durationStr || "03:40"}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 800, opacity: 0.6 }}>{track.durationStr}</span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -545,47 +409,49 @@ export default function App() {
       </div>
 
       {/* Floating Monochromatic Mini-Player */}
-      <div
-        onClick={() => setFullPlayerOpen(true)}
-        style={{
-          position: "fixed",
-          bottom: "16px",
-          left: "16px",
-          right: "16px",
-          height: "64px",
-          background: "#08090d",
-          color: "#fff",
-          borderRadius: "20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 18px",
-          boxShadow: "0 14px 28px rgba(0,0,0,0.25)",
-          cursor: "pointer",
-          zIndex: 90
-        }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
-          <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#1a1a1a", border: "1px solid #333", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img
-              src={currentTrack.cover}
-              alt="disc"
-              className={`spinning-vinyl ${!isPlaying ? "paused-vinyl" : ""}`}
-              style={{ width: "22px", height: "22px", borderRadius: "50%", objectFit: "cover" }}
-            />
+      {currentTrack && (
+        <div
+          onClick={() => setFullPlayerOpen(true)}
+          style={{
+            position: "fixed",
+            bottom: "16px",
+            left: "16px",
+            right: "16px",
+            height: "64px",
+            background: "#08090d",
+            color: "#fff",
+            borderRadius: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 18px",
+            boxShadow: "0 14px 28px rgba(0,0,0,0.25)",
+            cursor: "pointer",
+            zIndex: 90
+          }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+            <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#1a1a1a", border: "1px solid #333", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img
+                src={currentTrack.cover}
+                alt="disc"
+                className={`spinning-vinyl ${!isPlaying ? "paused-vinyl" : ""}`}
+                style={{ width: "22px", height: "22px", borderRadius: "50%", objectFit: "cover" }}
+              />
+            </div>
+            <div style={{ overflow: "hidden" }}>
+              <div style={{ fontSize: "14px", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
+              <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
+            </div>
           </div>
-          <div style={{ overflow: "hidden" }}>
-            <div style={{ fontSize: "14px", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</div>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.artist}</div>
-          </div>
+
+          <button onClick={togglePlayPause} style={{ background: "#fff", color: "#08090d", border: "none", width: "38px", height: "38px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            {isPlaying ? <Pause size={18} fill="#08090d" /> : <Play size={18} fill="#08090d" style={{ marginLeft: "2px" }} />}
+          </button>
         </div>
+      )}
 
-        <button onClick={togglePlayPause} style={{ background: "#fff", color: "#08090d", border: "none", width: "38px", height: "38px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          {isPlaying ? <Pause size={18} fill="#08090d" /> : <Play size={18} fill="#08090d" style={{ marginLeft: "2px" }} />}
-        </button>
-      </div>
-
-      {/* Full Monochromatic Vinyl Player Screen */}
-      {fullPlayerOpen && (
+      {/* Full Editorial Monochromatic Vinyl Player Screen */}
+      {fullPlayerOpen && currentTrack && (
         <div
           style={{
             position: "fixed",
@@ -611,8 +477,8 @@ export default function App() {
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
             {showLyrics ? (
               <div style={{ width: "100%", maxHeight: "320px", background: "rgba(0,0,0,0.06)", borderRadius: "20px", padding: "24px", overflowY: "auto", border: "2px solid #08090d" }}>
-                <h4 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: 900 }}>Lyrics & Metadata</h4>
-                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "16px", fontWeight: 800 }}>{currentTrack.lyrics || "No lyrics available."}</p>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: 900 }}>Lyrics & Info</h4>
+                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "16px", fontWeight: 800 }}>{currentTrack.lyrics}</p>
               </div>
             ) : (
               <div style={{ position: "relative", width: "270px", height: "270px", display: "flex", alignItems: "center", justifyContent: "center" }}>
