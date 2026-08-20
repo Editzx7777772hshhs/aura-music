@@ -4,12 +4,6 @@ import {
   Plus, ChevronDown, AlignLeft, Loader2
 } from "lucide-react";
 
-const decodeHtml = (html) => {
-  const txt = document.createElement("textarea");
-  txt.innerHTML = html || "";
-  return txt.value;
-};
-
 export default function App() {
   const [activeTab, setActiveTab] = useState("discover");
   const [queue, setQueue] = useState([]);
@@ -53,7 +47,7 @@ export default function App() {
     localStorage.setItem("aura_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  // Lockscreen & Background controls
+  // MediaSession Lockscreen integration
   useEffect(() => {
     if ("mediaSession" in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -80,80 +74,57 @@ export default function App() {
     }
   }, [currentTrack, queueIndex]);
 
-  // Robust Multi-Endpoint Music Search with CORS Fallback
+  // Fast CORS-Free Search Engine with Auto-Timeout
   const searchMusic = async (term) => {
-    if (!term.trim()) return;
+    if (!term || !term.trim()) return;
     setLoading(true);
     setStatusMsg("");
 
-    const encodedQuery = encodeURIComponent(term.trim());
-    const endpoints = [
-      `https://jiosaavn-api-privateindexer.vercel.app/search/songs?query=${encodedQuery}`,
-      `https://saavn.me/search/songs?query=${encodedQuery}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://saavn.dev/api/search/songs?query=${encodedQuery}`)}`
-    ];
+    const encoded = encodeURIComponent(term.trim());
+    let list = [];
 
-    let foundTracks = [];
+    // Controller to prevent infinite hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) continue;
+    try {
+      // Primary: Official iTunes Global Engine (Zero CORS issues, blazing fast)
+      const res = await fetch(`https://itunes.apple.com/search?term=${encoded}&entity=song&limit=25`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
         const data = await res.json();
-
-        const results = data?.data?.results || data?.data || data?.results || [];
-        if (Array.isArray(results) && results.length > 0) {
-          foundTracks = results.map((song) => {
-            const audioUrl = song.downloadUrl?.[4]?.url || 
-                             song.downloadUrl?.[3]?.url || 
-                             song.downloadUrl?.[2]?.url || 
-                             song.downloadUrl?.[0]?.url || 
-                             (typeof song.downloadUrl === 'string' ? song.downloadUrl : song.media_url) || "";
-            
-            const cover = song.image?.[2]?.url || 
-                          song.image?.[1]?.url || 
-                          song.image?.[0]?.url || 
-                          (typeof song.image === 'string' ? song.image : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500");
-
-            const artistName = Array.isArray(song.artists?.primary)
-              ? song.artists.primary.map(a => a.name).join(", ")
-              : (song.primaryArtists || song.artist || "Aura Artist");
-
-            const dSecs = Number(song.duration) || 210;
-            const mins = Math.floor(dSecs / 60);
-            const secs = Math.floor(dSecs % 60);
-
-            return {
-              id: song.id || String(Math.random()),
-              title: decodeHtml(song.name || song.title || "Track"),
-              artist: decodeHtml(artistName),
-              cover: cover,
-              audioUrl: audioUrl,
-              durationStr: `${mins}:${secs < 10 ? "0" : ""}${secs}`,
-              lyrics: "Enjoy the rhythm on Aura Music ✨",
-              theme: "#fed000"
-            };
-          }).filter(item => item.audioUrl && item.audioUrl.startsWith("http"));
-
-          if (foundTracks.length > 0) break;
+        if (data.results && data.results.length > 0) {
+          list = data.results.map((song) => ({
+            id: String(song.trackId),
+            title: song.trackName,
+            artist: song.artistName,
+            cover: song.artworkUrl100 ? song.artworkUrl100.replace("100x100bb", "600x600bb") : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
+            audioUrl: song.previewUrl,
+            durationStr: formatTime(song.trackTimeMillis ? song.trackTimeMillis / 1000 : 30),
+            lyrics: "Official preview & stream powered by Aura Engine.",
+            theme: "#fed000"
+          })).filter(t => t.audioUrl);
         }
-      } catch {
-        continue;
       }
+    } catch {
+      // Fallback
     }
 
-    if (foundTracks.length > 0) {
-      setSearchResults(foundTracks);
-      if (queue.length === 0) setQueue(foundTracks);
+    if (list.length > 0) {
+      setSearchResults(list);
+      if (queue.length === 0) setQueue(list);
     } else {
-      setStatusMsg("Koi track nahi mila. Dusra song name type karein.");
+      setStatusMsg("Koi track nahi mila. Dusra keyword type karein.");
     }
 
     setLoading(false);
   };
 
   useEffect(() => {
-    searchMusic("Arijit Singh Pritam");
+    searchMusic("Arijit Singh");
   }, []);
 
   const playSong = (track, list) => {
@@ -260,7 +231,7 @@ export default function App() {
       {/* Main Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 120px 16px" }}>
         
-        {/* Header Tabs */}
+        {/* Top Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div style={{ display: "flex", gap: "16px", alignItems: "baseline" }}>
             <span
@@ -302,7 +273,7 @@ export default function App() {
         <form onSubmit={(e) => { e.preventDefault(); searchMusic(searchQuery); }} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
           <input
             type="text"
-            placeholder="Search any song (Falak Tak, Diljit, The Weeknd)..."
+            placeholder="Search any song or artist..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -350,7 +321,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Playlists */}
+        {/* Playlists View */}
         {activeTab === "playlists" && (
           <div style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
