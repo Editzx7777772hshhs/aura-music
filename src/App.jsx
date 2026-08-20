@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ListPlus, Heart, ListMusic, Trash2, Clock } from "lucide-react";
+import Sidebar from "./components/layout/Sidebar";
+import Topbar from "./components/layout/Topbar";
+import MobileNav from "./components/layout/MobileNav";
+import Toasts from "./components/layout/Toasts";
+import PlayerBar from "./components/player/PlayerBar";
+import QueueDrawer from "./components/player/QueueDrawer";
+import AddToPlaylistModal from "./components/modals/AddToPlaylistModal";
 
-import Sidebar from "./components/layout/Sidebar.jsx";
-import Topbar from "./components/layout/Topbar.jsx";
-import MobileNav from "./components/layout/MobileNav.jsx";
-import Toasts from "./components/layout/Toasts.jsx";
 import PlayerBar from "./components/player/PlayerBar.jsx";
 import QueueDrawer from "./components/player/QueueDrawer.jsx";
 import AddToPlaylistModal from "./components/modals/AddToPlaylistModal.jsx";
